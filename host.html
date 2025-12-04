@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Grand Game Center - Host</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        :root { --gb-pink: #F7CAC9; --gb-purple: #5D3A5D; --gb-gold: #D4AF37; --gb-red: #C0392B; }
+        body { background-color: var(--gb-pink); color: var(--gb-purple); font-family: 'GmarketSansMedium', sans-serif; margin: 0; text-align: center; display: flex; flex-direction: column; height: 100vh; }
+        
+        .header { background: var(--gb-purple); color: #fff; padding: 15px 20px; border-bottom: 5px solid var(--gb-gold); display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; }
+        .header-left { text-align: left; } .header-center { text-align: center; font-size: 1.8rem; font-weight: bold; white-space: nowrap; } .header-right { text-align: right; font-size: 1rem; opacity: 0.8; }
+        .home-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 1rem; cursor: pointer; padding: 8px 15px; border-radius: 20px; transition: 0.3s; display: inline-flex; align-items: center; gap: 5px; }
+        .home-btn:hover { background: rgba(255,255,255,0.3); }
+
+        .main { flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column; width: 100%; position: relative; }
+        .screen { display: none; width: 80%; max-width: 900px; }
+        .active { display: block; }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; max-width: 800px; }
+        .menu-card { background: #fff; padding: 40px; border-radius: 15px; border: 3px solid var(--gb-gold); cursor: pointer; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .menu-card:hover { transform: translateY(-10px); background: var(--gb-purple); color: #fff; }
+        .menu-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 10px; }
+        .menu-desc { font-size: 1rem; opacity: 0.8; }
+
+        .question-box { background: #fff; padding: 40px; border-radius: 10px; border: 3px solid var(--gb-gold); font-size: 2.5rem; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); word-break: keep-all; font-weight: bold; position: relative; }
+        .q-hint { display: block; font-size: 1.5rem; color: #666; margin-top: 15px; font-weight: normal; }
+        .quiz-image { max-width: 100%; max-height: 400px; border-radius: 10px; margin-top: 20px; border: 2px solid #ddd; display: none; } 
+        
+        .timer-container { width: 100%; height: 15px; background: #ddd; position: absolute; top: 0; left: 0; }
+        .timer-bar { height: 100%; background: var(--gb-red); width: 100%; transition: width 1s linear; }
+        .time-badge { position: absolute; top: -30px; right: -30px; background: var(--gb-purple); color: #fff; width: 80px; height: 80px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2rem; border: 4px solid var(--gb-gold); }
+
+        .options-display { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
+        .opt { padding: 25px; color: white; font-size: 1.5rem; border-radius: 15px; opacity: 0.6; transition: 0.3s; font-weight: bold; }
+        .opt.reveal { opacity: 1; border: 5px solid var(--gb-gold); transform: scale(1.05); }
+        .opt-1 { background: #E74C3C; } .opt-2 { background: #3498DB; } 
+        .opt-3 { background: #F1C40F; color: black; } .opt-4 { background: #2ECC71; }
+        
+        #live-rank-box { display: none; margin-top: 20px; background: #fff; padding: 20px; border: 2px solid var(--gb-gold); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; }
+        #explanation-box { display: none; margin-top: 20px; background: var(--gb-purple); color: #fff; padding: 20px; border: 3px solid var(--gb-gold); border-radius: 10px; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.2); text-align: left; }
+        .exp-title { color: var(--gb-gold); font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .exp-text { font-size: 1.5rem; line-height: 1.5; }
+
+        .btn { padding: 15px 40px; background: var(--gb-purple); color: white; border: none; font-size: 1.2rem; cursor: pointer; margin-top: 30px; border-radius: 50px; }
+        .reset-btn { background: #e0e0e0; color: #555; border: none; padding: 8px 16px; border-radius: 20px; margin-top: 15px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+
+        /* 라운드 화면 */
+        #round-screen { background: var(--gb-purple); color: white; display: none; width: 100%; height: 100%; justify-content: center; align-items: center; flex-direction: column; position: absolute; top: 0; left: 0; z-index: 100; }
+        .round-title { font-size: 5rem; font-weight: bold; color: var(--gb-gold); margin-bottom: 20px; text-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .round-subtitle { font-size: 2rem; opacity: 0.8; }
+        .round-btn { background: var(--gb-gold); color: var(--gb-purple); font-size: 1.5rem; padding: 15px 40px; border: none; border-radius: 50px; margin-top: 50px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left"><button class="home-btn" onclick="showMainMenu()">🏠 Home</button></div>
+        <div class="header-center">The 우아한 게임 이야기</div>
+        <div class="header-right">Host Mode</div>
+    </div>
+
+    <div class="main">
+        <div id="menu-screen" class="screen active">
+            <h1 style="font-size:3rem; margin-bottom:50px;">Select Your Game</h1>
+            <div class="menu-grid">
+                <div class="menu-card" onclick="selectGameMode('main')"><div class="menu-title">🏆 메인 퀴즈</div><div class="menu-desc">기본 상식 및 행사 퀴즈</div></div>
+                <div class="menu-card" onclick="selectGameMode('consonant')"><div class="menu-title">🧩 자음 퀴즈</div><div class="menu-desc">초성만 보고 맞춰보세요!</div></div>
+                <div class="menu-card" onclick="selectGameMode('image')"><div class="menu-title">🔍 이미지 확대</div><div class="menu-desc">이 사진은 무엇의 일부일까요?</div></div>
+                <div class="menu-card" onclick="selectGameMode('desc')"><div class="menu-title">📝 설명 퀴즈</div><div class="menu-desc">설명을 듣고 단어를 맞춰주세요</div></div>
+            </div>
+            <div style="margin-top:40px; font-size:1.2rem;">접속자: <span id="total-p-count" style="color:var(--gb-red); font-weight:bold;">0</span>명</div>
+        </div>
+
+        <div id="lobby-screen" class="screen">
+            <h1 id="lobby-title" style="font-size:3rem;">Game Ready</h1>
+            <div id="qr-area" style="background:#fff; padding:20px; border:4px solid var(--gb-gold); display:inline-block; margin:20px 0;"></div>
+            <div style="font-size:2rem; margin-top:20px; font-weight:bold;">참가자: <span id="p-count" style="color:var(--gb-red);">0</span>명</div>
+            <button class="reset-btn" onclick="resetPlayers()">🔄 참여자 초기화</button><br>
+            <button class="btn" onclick="startGame()">GAME START 🎬</button>
+        </div>
+
+        <div id="round-screen">
+            <div class="round-title" id="round-title-text">ROUND 1</div>
+            <div class="round-subtitle">준비되셨나요?</div>
+            <button class="round-btn" onclick="startRound()">START ROUND ▶</button>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div class="timer-container"><div class="timer-bar" id="timer-bar"></div></div>
+            <div class="question-box"><span id="q-text">문제</span><img id="q-image" class="quiz-image" src="" alt="Img"><div class="time-badge" id="time-left">0</div></div>
+            <div class="options-display" id="opt-container"></div>
+            <div id="explanation-box"><div class="exp-title">💡 Comment</div><div id="exp-text" class="exp-text"></div></div>
+            <div id="live-rank-box"><h3 style="margin:0 0 10px 0; color:var(--gb-purple);">🏆 현재 TOP 5</h3><div id="live-rank-list"></div></div>
+            <div style="margin-top:20px;">응답: <span id="ans-count" style="font-weight:bold; color:var(--gb-purple);">0</span>명</div>
+            <button class="btn" id="next-btn" onclick="manualCheck()">정답 확인</button>
+        </div>
+
+        <div id="result-screen" class="screen">
+            <h1 style="font-size:3rem; color:var(--gb-purple)">🏆 최종 명예의 전당 🏆</h1>
+            <div class="rank-list" id="rank-board" style="text-align:left; background:#fff; padding:30px; border:3px solid var(--gb-gold); margin-bottom:20px; max-height:500px; overflow-y:auto;"></div>
+            <button class="btn" onclick="showMainMenu()">메인 메뉴로 이동</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks", authDomain: "thegranddvegala.firebaseapp.com", databaseURL: "https://thegranddvegala-default-rtdb.firebaseio.com", projectId: "thegranddvegala", storageBucket: "thegranddvegala.firebasestorage.app", messagingSenderId: "980091305368", appId: "1:980091305368:web:e247f9be81e6786888bfed", measurementId: "G-8GL8G5NCQF" };
+        firebase.initializeApp(firebaseConfig); const db = firebase.database();
+        const SHEET_URL = "https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec";
+
+        let allQuizData=[], currentGameData=[], playQueue=[], queueIndex=-1, isAnswerChecked=false, timerInterval=null, questionStartTime=0, currentTimeLimit=0;
+        const clientURL = window.location.href.replace('host.html', 'client.html');
+        if(clientURL) new QRCode(document.getElementById("qr-area"), { text: clientURL, width: 200, height: 200 });
+
+        window.onload = function() { fetch(SHEET_URL).then(res=>res.json()).then(data=>{ allQuizData=data; console.log("Loaded:",data.length); }).catch(err=>alert("시트 읽기 실패!")); };
+        db.ref('players').on('value', snap => { const c=snap.numChildren(); document.getElementById('p-count').innerText=c; document.getElementById('total-p-count').innerText=c; });
+        db.ref('answers').on('value', snap => document.getElementById('ans-count').innerText=snap.numChildren());
+
+        function resetPlayers() { if(confirm("정말 초기화 하시겠습니까?")) { db.ref('players').remove(); db.ref('answers').remove(); db.ref('gameStatus').set({state:'lobby'}); alert("완료"); } }
+        function showMainMenu() { document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active')); document.getElementById('menu-screen').classList.add('active'); db.ref('gameStatus').set({state:'lobby'}); }
+        
+        function selectGameMode(cat) { 
+            currentGameData = allQuizData.filter(i=>i.category===cat); if(currentGameData.length==0) return alert("문제 없음: "+cat);
+            playQueue=[]; let lastRound="";
+            currentGameData.forEach(q => { if(q.round && q.round!=lastRound) { playQueue.push({isRoundCover:true, title:"ROUND "+q.round}); lastRound=q.round; } playQueue.push(q); });
+            document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active')); document.getElementById('lobby-screen').classList.add('active');
+            let t="Game Ready"; if(cat=='consonant') t="🧩 자음 퀴즈"; if(cat=='image') t="🔍 이미지 퀴즈"; if(cat=='desc') t="📝 설명 퀴즈";
+            document.getElementById('lobby-title').innerText=t;
+        }
+        function startGame() { queueIndex=-1; document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active')); document.getElementById('game-screen').classList.add('active'); nextStep(); }
+        function nextStep() {
+            queueIndex++; if(queueIndex>=playQueue.length) { finishGame(); return; }
+            const item=playQueue[queueIndex];
+            if(item.isRoundCover) { document.getElementById('round-title-text').innerText=item.title; document.getElementById('round-screen').style.display='flex'; db.ref('gameStatus').set({state:'wait'}); }
+            else { loadQuestion(item); }
+        }
+        function startRound() { document.getElementById('round-screen').style.display='none'; nextStep(); }
+
+        function loadQuestion(q) {
+            isAnswerChecked=false; currentTimeLimit=q.time;
+            let displayQ=q.q; if(displayQ.includes('\n')) { const parts=displayQ.split('\n'); displayQ=`${parts[0]}<span class="q-hint">${parts.slice(1).join('<br>')}</span>`; }
+            document.getElementById('q-text').innerHTML=displayQ;
+            const imgEl=document.getElementById('q-image'); if(q.img&&q.img.startsWith('http')) { imgEl.src=q.img; imgEl.style.display='block'; } else { imgEl.style.display='none'; }
+            document.getElementById('ans-count').innerText="0"; document.getElementById('next-btn').innerText="정답 확인";
+            document.getElementById('live-rank-box').style.display='none'; document.getElementById('explanation-box').style.display='none'; document.getElementById('opt-container').style.display='grid';
+            
+            const con=document.getElementById('opt-container'); con.innerHTML='';
+            if(q.type==='choice'||q.type==='seq') { q.options.forEach((opt,idx) => { con.innerHTML += `<div class="opt opt-${idx+1}" id="opt-${idx}">${['▲','■','●','◆'][idx]} ${opt}</div>`; }); }
+            else if(q.type==='ox') { con.innerHTML = `<div class="opt opt-1" id="opt-0" style="background:#E74C3C">O</div><div class="opt opt-2" id="opt-1" style="background:#3498DB">X</div>`; }
+            else { con.style.display='none'; con.innerHTML=`<div style="text-align:center;width:200%;font-size:1.5rem;color:#888;">📱 폰에서 입력해주세요!</div>`; }
+            
+            db.ref('gameStatus').set({ state:'play', type:q.type }); db.ref('answers').remove();
+            questionStartTime=Date.now(); startTimer(currentTimeLimit);
+        }
+
+        function startTimer(s) { clearInterval(timerInterval); let t=s; document.getElementById('time-left').innerText=t; document.getElementById('timer-bar').style.width='100%'; document.getElementById('timer-bar').style.transition='none'; setTimeout(()=>{document.getElementById('timer-bar').style.transition=`width ${s}s linear`;document.getElementById('timer-bar').style.width='0%';},50); timerInterval=setInterval(()=>{t--;document.getElementById('time-left').innerText=t;if(t<=0){clearInterval(timerInterval);checkAnswer();}},1000); }
+        function manualCheck() { if(!isAnswerChecked) { clearInterval(timerInterval); checkAnswer(); } else { nextStep(); } }
+
+        // ★★★ 여기가 수정된 부분입니다! ★★★
+        function checkAnswer() {
+            if(isAnswerChecked) return; isAnswerChecked=true;
+            document.getElementById('next-btn').innerText="다음 문제 >"; document.getElementById('time-left').innerText="STOP";
+            
+            // 1. 현재 문제 정보 가져오기
+            const q = playQueue[queueIndex];
+
+            // 2. ★ 핵심 수정: 폰에게 '정답 결과 화면(result)'을 띄우라고 신호 보냄! (정답 데이터 포함)
+            db.ref('gameStatus').set({ state: 'result', type: q.type, answer: q.ans });
+
+            // 3. 호스트 화면 처리 (정답 표시)
+            if(q.type!=='input') { 
+                if(q.type==='seq') document.getElementById('q-text').innerHTML+=`<br><br><span style="font-size:1.5rem;color:var(--gb-purple);">✅ 정답 순서: ${q.ans}</span>`; 
+                else { const ansId=`opt-${q.ans}`; if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal'); } 
+            } else { document.getElementById('q-text').innerHTML+=`<br><br><span style="font-size:1.5rem;color:var(--gb-purple);">✅ 정답: ${q.ans}</span>`; }
+            
+            if(q.desc && q.desc.trim()!=="") { document.getElementById('exp-text').innerText=q.desc; document.getElementById('explanation-box').style.display='block'; }
+
+            // 4. 채점 및 랭킹
+            db.ref('answers').once('value', snap => {
+                const answers=snap.val(); if(!answers) { showLiveRank(); return; }
+                for(const pid in answers) {
+                    const d=answers[pid]; let isCorrect=false;
+                    if(String(d.answer).replace(/\s/g,"")===String(q.ans).replace(/\s/g,"")) isCorrect=true;
+                    if(isCorrect) {
+                        const taken=(d.time-questionStartTime)/1000; const ratio=Math.max(0,(currentTimeLimit-taken)/currentTimeLimit);
+                        const point=Math.round(500+(500*ratio)); db.ref(`players/${pid}/score`).transaction(s=>(s||0)+point);
+                    }
+                }
+                setTimeout(showLiveRank, 1000);
+            });
+        }
+
+        function showLiveRank() { db.ref('players').orderByChild('score').limitToLast(5).once('value', s=>{ const l=[]; s.forEach(c=>l.push({n:c.val().name,s:c.val().score||0})); l.reverse(); const el=document.getElementById('live-rank-list'); el.innerHTML=(l.length==0)?"<div style='padding:10px'>순위 없음</div>":""; l.forEach((p,i)=>{ el.innerHTML+=`<div style="padding:10px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;font-size:1.3rem;${i==0?'font-weight:bold;color:#D4AF37;background-color:#fffbf0':''}"><span>${i+1}. ${p.n}</span><span>${p.s}</span></div>`; }); document.getElementById('live-rank-box').style.display='block'; document.getElementById('opt-container').style.display='none'; }); }
+        function finishGame() { document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active')); document.getElementById('result-screen').classList.add('active'); db.ref('players').orderByChild('score').limitToLast(10).once('value',s=>{ const l=[]; s.forEach(c=>l.push({n:c.val().name,s:c.val().score||0})); l.reverse(); const b=document.getElementById('rank-board'); b.innerHTML=(l.length==0)?"<div style='padding:20px'>참여자 없음</div>":""; l.forEach((p,i)=>{ b.innerHTML+=`<div style="padding:15px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;font-size:1.4rem;${i==0?'background:#fff9db;color:#D4AF37;font-weight:bold':''}"><span>${i+1}위 ${p.n}</span><span>${p.s}</span></div>`; }); }); }
+    </script>
+</body>
+</html>
