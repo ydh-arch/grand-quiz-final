@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>The Grand Quiz - Host</title>
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js](https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js)"></script>
-    <script src="[https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js](https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js)"></script>
-    <script src="[https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js](https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js)"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
         :root { --gb-pink: #F7CAC9; --gb-purple: #5D3A5D; --gb-gold: #D4AF37; --gb-red: #C0392B; }
@@ -39,11 +39,11 @@
         .opt.reveal { opacity: 1; border: 5px solid var(--gb-gold); transform: scale(1.05); box-shadow: 0 0 20px var(--gb-gold); }
         .opt-1 { background: #E74C3C; } .opt-2 { background: #3498DB; } .opt-3 { background: #F1C40F; color: black; } .opt-4 { background: #2ECC71; }
 
-        /* ★ 힌트 버튼 스타일 추가 ★ */
+        /* 힌트 버튼 */
         .opt-hint { background: var(--gb-purple); border: 3px solid var(--gb-gold); color: white; font-size: 1.5rem; border-radius: 15px; cursor: pointer; transition: 0.2s; font-weight: bold; padding: 20px; }
         .opt-hint:hover { background: #4a2d4a; transform: scale(1.05); }
         
-        /* ★ 힌트 텍스트 표시 영역 스타일 ★ */
+        /* 힌트 텍스트 영역 */
         .hint-text-area { margin-top: 20px; font-size: 1.8rem; color: #E67E22; font-weight: bold; background: #fff3e0; padding: 15px; border-radius: 10px; width: 90%; display: none; animation: fadeIn 0.5s; border: 2px dashed #E67E22; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -58,8 +58,6 @@
         .rank-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 1.3rem; }
         .rank-row:first-child { color: #D4AF37; font-weight: bold; font-size: 1.5rem; }
         .link-text { font-size: 0.8rem; color: #666; margin-top: 5px; word-break: break-all; max-width: 300px; }
-        
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; display: flex; justify-content: center; align-items: center; font-size: 2rem; z-index: 9999; flex-direction: column; }
     </style>
 </head>
 <body>
@@ -107,14 +105,13 @@
                 <img id="q-image" src="" style="max-width:100%; max-height:300px; display:none; margin-bottom:15px; border-radius:10px;">
                 <span id="q-text" style="white-space: pre-wrap;">문제 로딩중...</span>
                 
-                <!-- ★ 힌트가 출력될 영역 -->
+                <!-- 힌트 텍스트 영역 -->
                 <div id="hint-display" class="hint-text-area"></div>
 
                 <div class="time-badge" id="time-left">0</div>
                 <div id="q-point-badge" style="font-size:1rem; color:#888; margin-top:15px;">배점: 1000점</div>
             </div>
             
-            <!-- 버튼들이 표시될 영역 -->
             <div class="options-display" id="opt-container"></div>
             
             <div id="live-rank-box" class="rank-popup">
@@ -141,7 +138,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks",
             authDomain: "thegranddvegala.firebaseapp.com",
-            databaseURL: "[https://thegranddvegala-default-rtdb.firebaseio.com](https://thegranddvegala-default-rtdb.firebaseio.com)",
+            databaseURL: "https://thegranddvegala-default-rtdb.firebaseio.com",
             projectId: "thegranddvegala",
             storageBucket: "thegranddvegala.firebasestorage.app",
             messagingSenderId: "980091305368",
@@ -151,7 +148,7 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const SHEET_URL = "[https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec](https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec)";
+        const SHEET_URL = "https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec";
 
         let allQuizData = [], currentQuizList = [], currentQIndex = -1;
         let isRankShown = false, timerInterval = null, questionStartTime = 0, currentTimeLimit = 0;
@@ -168,7 +165,6 @@
                 allQuizData = data;
                 document.getElementById('status-text').innerText = "✅ 준비 완료";
                 document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('loading'));
-                document.getElementById('loading-overlay').style.display = 'none';
                 db.ref('gameStatus').set({ state: 'lobby' }); 
             }).catch(err => { 
                 document.getElementById('status-text').innerText = "❌ 로딩 실패";
@@ -221,11 +217,18 @@
             else nextQuestion();
         }
 
-        // ★ 힌트 보여주기 함수 추가
+        // ★ 텍스트 힌트 보여주기 (설명 퀴즈용)
         function showHint(text) {
             const display = document.getElementById('hint-display');
             display.innerText = text;
             display.style.display = 'block';
+        }
+
+        // ★ 이미지 힌트 보여주기 (이미지 확대 퀴즈용)
+        function changeImage(url) {
+            const imgEl = document.getElementById('q-image');
+            imgEl.src = url;
+            imgEl.style.display = 'block';
         }
 
         function nextQuestion() {
@@ -241,15 +244,11 @@
             document.getElementById('q-text').innerText = q.q;
             document.getElementById('q-point-badge').innerText = `배점: ${point}점`;
             
-            // 이미지 처리
             const imgEl = document.getElementById('q-image');
             imgEl.style.display = (q.image && q.image.startsWith('http')) ? 'block' : 'none';
             if(q.image) imgEl.src = q.image;
 
-            // 힌트창 초기화
             document.getElementById('hint-display').style.display = 'none';
-            document.getElementById('hint-display').innerText = '';
-
             document.getElementById('ans-count').innerText = "0";
             document.getElementById('live-rank-box').style.display = 'none';
             document.getElementById('opt-container').style.display = 'grid';
@@ -260,20 +259,25 @@
             if(q.type === '순서' || q.type === 'order') clientType = 'seq';
             if(q.type === '주관식') clientType = 'input';
 
-            // ★ 힌트 퀴즈 로직 (이미지/설명 카테고리 + 보기가 있는 경우)
-            const isHintCategory = ['이미지', '설명', 'image', 'desc'].some(k => (q.category||'').toLowerCase().includes(k));
+            // ★ 힌트 퀴즈 로직 (이미지 교체 vs 텍스트 출력 구분)
+            const cat = (q.category||'').toLowerCase();
+            const isImageQuiz = ['이미지', 'image', 'zoom', '확대'].some(k => cat.includes(k));
+            const isDescQuiz = ['설명', 'desc', 'hint', '힌트'].some(k => cat.includes(k));
             const hasHints = q.options && q.options.some(o => o && String(o).trim() !== "");
 
-            if (isHintCategory && hasHints) {
-                // 힌트 버튼 생성 (화면엔 버튼, 클라이언트엔 주관식 전송)
+            if ((isImageQuiz || isDescQuiz) && hasHints) {
                 q.options.forEach((opt, idx) => {
                     if (opt && String(opt).trim() !== "") {
-                        // 특수문자 처리를 위해 replace 사용
                         const safeOpt = String(opt).replace(/"/g, '&quot;').replace(/'/g, "\\'");
-                        container.innerHTML += `<button class="opt-hint" onclick="showHint('${safeOpt}')">💡 힌트 ${idx+1}</button>`;
+                        if(isImageQuiz) {
+                            // 이미지 퀴즈 -> 이미지 교체
+                            container.innerHTML += `<button class="opt-hint" onclick="changeImage('${safeOpt}')">🖼️ 힌트 ${idx+1}</button>`;
+                        } else {
+                            // 설명 퀴즈 -> 텍스트 출력
+                            container.innerHTML += `<button class="opt-hint" onclick="showHint('${safeOpt}')">💡 힌트 ${idx+1}</button>`;
+                        }
                     }
                 });
-                // 클라이언트에게는 무조건 입력형으로 전송 (보기가 있어도 힌트용이므로)
                 clientType = 'input'; 
             } else if(q.type === 'choice') {
                 q.options.forEach((o,i) => container.innerHTML += `<div class="opt opt-${i+1}" id="opt-${i}">${['▲','■','●','◆'][i]} ${o}</div>`);
@@ -314,13 +318,11 @@
 
             const maxPoint = q.point ? parseInt(q.point) : 1000;
 
-            if(q.type !== 'input' && q.type !== 'order' && q.type !== '순서' && q.type !== 'seq') {
-                // 힌트 퀴즈도 여기서 처리됨 (힌트 버튼은 그대로 두고 정답 공개)
+            // 힌트 퀴즈도 여기서 처리 (답 공개)
+            if(q.type !== 'input' && q.type !== 'order' && q.type !== '순서' && q.type !== 'seq' && document.getElementsByClassName('opt-hint').length === 0) {
                 const ansId = `opt-${q.ans}`;
                 if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
-            }
-            // 모든 문제에서 텍스트 정답 공개
-            document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
+            } else document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
 
             db.ref('answers').once('value', ansSnap => {
                 const answers = ansSnap.val();
@@ -331,7 +333,7 @@
                         let score = pData.score || 0, isCorrect = false, earned = 0;
                         if(answers && answers[pid]) {
                             const ans = answers[pid];
-                            // 힌트 퀴즈는 무조건 텍스트 비교 (input 타입)
+                            // 힌트 퀴즈 포함 텍스트 비교
                             if(['input','order','순서','seq'].includes(q.type) || q.type === 'text' || document.getElementsByClassName('opt-hint').length > 0) {
                                 if(ans.answer && String(ans.answer).replace(/\s/g,"") === String(q.ans).replace(/\s/g,"")) isCorrect = true;
                             } else if(String(ans.answer) === String(q.ans)) isCorrect = true;
