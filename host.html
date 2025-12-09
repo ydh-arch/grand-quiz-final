@@ -16,20 +16,17 @@
         .screen { display: none; width: 80%; max-width: 900px; }
         .active { display: block; }
 
-        /* QR 영역 */
+        /* QR 영역 스타일 */
         #qr-area { background: #fff; padding: 20px; border: 4px solid var(--gb-gold); display: inline-block; min-width: 200px; min-height: 200px; }
         #qr-area img { display: block; margin: 0 auto; }
 
-        /* 라운드 정보 배지 */
-        .round-badge { background: var(--gb-gold); color: #fff; padding: 5px 15px; border-radius: 20px; font-size: 1.2rem; margin-bottom: 10px; display: inline-block; font-weight: bold; }
-
-        /* 문제 화면 */
+        /* 타이머 바 */
         .timer-container { width: 100%; height: 15px; background: #ddd; position: absolute; top: 0; left: 0; }
         .timer-bar { height: 100%; background: var(--gb-red); width: 100%; transition: width 1s linear; }
+
         .question-box { background: #fff; padding: 40px; border-radius: 10px; border: 3px solid var(--gb-gold); font-size: 2.2rem; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); word-break: keep-all; font-weight: bold; position: relative; }
         .time-badge { position: absolute; top: -30px; right: -30px; background: var(--gb-purple); color: #fff; width: 80px; height: 80px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2rem; border: 4px solid var(--gb-gold); }
 
-        /* 보기 및 랭킹 */
         .options-display { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
         .opt { padding: 25px; color: white; font-size: 1.5rem; border-radius: 15px; opacity: 0.6; transition: 0.3s; font-weight: bold; }
         .opt.reveal { opacity: 1; border: 5px solid var(--gb-gold); transform: scale(1.05); box-shadow: 0 0 20px var(--gb-gold); }
@@ -38,15 +35,15 @@
 
         #live-rank-box { display: none; margin-top: 20px; background: #fff; padding: 20px; border: 2px solid var(--gb-gold); border-radius: 10px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .live-rank-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; font-size: 1.5rem; }
-        
-        /* 라운드 종료 화면 */
-        #round-screen { background: rgba(255, 255, 255, 0.9); padding: 50px; border-radius: 20px; border: 5px solid var(--gb-purple); }
+        .live-rank-item:first-child { color: #D4AF37; font-weight: bold; font-size: 1.8rem; }
+
         .rank-list { text-align: left; background: #fff; padding: 30px; border-radius: 15px; border: 3px solid var(--gb-gold); max-height: 500px; overflow-y: auto; }
         .rank-item { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-size: 1.3rem; }
+        .rank-1 { color: #D4AF37; font-weight: bold; font-size: 2rem; background: #fffbf0; }
 
         .btn { padding: 15px 40px; background: var(--gb-purple); color: white; border: none; font-size: 1.2rem; cursor: pointer; margin-top: 30px; border-radius: 50px; }
-        .btn:hover { background: #4a2d4a; transform: scale(1.05); }
-        .btn-reset { background: var(--gb-red); }
+        .btn:hover { background: #4a2d4a; transform: scale(1.05); transition: 0.2s; }
+        .btn-reset { background: var(--gb-red); font-size: 0.9rem; padding: 10px 20px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -64,21 +61,23 @@
                 입장객: <span id="p-count" style="color:var(--gb-red);">0</span>명
             </div>
             <button class="btn" onclick="startGame()">EVENT START 🎬</button>
+            <br>
+            <button class="btn btn-reset" onclick="resetAllScores()">⚠️ 점수/참가자 초기화</button>
         </div>
 
         <div id="game-screen" class="screen">
-            <div id="round-display" class="round-badge" style="display:none;">ROUND 1</div>
             <div class="timer-container"><div class="timer-bar" id="timer-bar"></div></div>
             
             <div class="question-box">
-                <span id="q-text">문제 로딩 중...</span>
+                <span id="q-text">문제 내용</span>
                 <div class="time-badge" id="time-left">0</div>
+                <div id="q-point-badge" style="font-size:1rem; color:#888; margin-top:10px;">배점: 1000점</div>
             </div>
             
             <div class="options-display" id="opt-container"></div>
             
             <div id="live-rank-box">
-                <h3 style="margin:0 0 10px 0; color:var(--gb-purple);">🏆 현재 순위</h3>
+                <h3 style="margin:0 0 10px 0; color:var(--gb-purple);">🏆 현재 순위 (TOP 5)</h3>
                 <div id="live-rank-list"></div>
             </div>
             
@@ -88,38 +87,31 @@
             <button class="btn" id="next-btn" onclick="manualCheck()">정답 확인</button>
         </div>
 
-        <div id="round-end-screen" class="screen">
-            <h1 style="font-size:3rem; color:var(--gb-purple)">🎉 ROUND 종료!</h1>
-            <h3>이번 라운드 우승자는?</h3>
-            <div class="rank-list" id="round-rank-board"></div>
-            <p style="color:var(--gb-red); margin-top:20px;">* 다음 라운드를 위해 점수가 초기화됩니다.</p>
-            <button class="btn btn-reset" onclick="startNextRound()">다음 라운드 시작 (점수 리셋)</button>
-        </div>
-
         <div id="result-screen" class="screen">
             <h1 style="font-size:3rem; color:var(--gb-purple)">🏆 최종 명예의 전당 🏆</h1>
-            <div class="rank-list" id="final-rank-board"></div>
-            <button class="btn" onclick="location.reload()">새로운 게임</button>
+            <div class="rank-list" id="rank-board"></div>
+            <button class="btn" onclick="location.reload()">처음으로</button>
         </div>
     </div>
 
     <script>
-        // ★★★ 설정 (본인 정보 입력) ★★★
+        // 1. Firebase 설정
         const firebaseConfig = {
-apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks",
-authDomain: "thegranddvegala.firebaseapp.com",
-databaseURL: "https://thegranddvegala-default-rtdb.firebaseio.com",
-projectId: "thegranddvegala",
-storageBucket: "thegranddvegala.firebasestorage.app",
-messagingSenderId: "980091305368",
-appId: "1:980091305368:web:e247f9be81e6786888bfed",
-measurementId: "G-8GL8G5NCQF"
-};
-        const SHEET_URL = "https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec";
-        // ------------------------------------
-
-        firebase.initializeApp(firebaseConfig);
+            apiKey: "여기에_API_KEY_입력",
+            authDomain: "여기에_AUTH_DOMAIN_입력",
+            databaseURL: "여기에_DATABASE_URL_입력",
+            projectId: "여기에_PROJECT_ID_입력",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
+
+        // 2. 구글 시트 웹앱 URL
+        const SHEET_URL = "여기에_구글스크립트_URL_입력";
 
         let quizData = [];
         let currentQIndex = -1;
@@ -127,80 +119,81 @@ measurementId: "G-8GL8G5NCQF"
         let timerInterval = null;
         let questionStartTime = 0;
         let currentTimeLimit = 0;
-        let currentRoundPoints = 1000; // 기본값
 
-        // QR코드
         const clientURL = window.location.href.replace('host.html', 'client.html');
-        if(clientURL) new QRCode(document.getElementById("qr-area"), { text: clientURL, width: 200, height: 200 });
+        if(clientURL) {
+            new QRCode(document.getElementById("qr-area"), {
+                text: clientURL,
+                width: 200,
+                height: 200
+            });
+        }
 
-        // 데이터 로드
         window.onload = function() {
             if(!SHEET_URL || SHEET_URL.includes("여기에")) {
-                alert("구글 시트 URL을 설정해주세요!"); 
+                alert("구글 시트 URL 미입력. 테스트 모드로 실행합니다.");
+                quizData = [
+                    { time: 10, point: 1000, type: 'choice', q: "테스트: 1+1은?", options: ["1", "2", "3", "4"], ans: 1 }
+                ];
                 return;
             }
+
             fetch(SHEET_URL)
                 .then(res => res.json())
                 .then(data => {
                     quizData = data;
                     console.log("문제 로딩 완료:", quizData);
                 })
-                .catch(err => alert("문제 불러오기 실패! 시트 권한을 확인하세요."));
+                .catch(err => {
+                    console.error(err);
+                    alert("문제 로딩 실패.");
+                });
         };
 
         db.ref('players').on('value', snap => document.getElementById('p-count').innerText = snap.numChildren());
         db.ref('answers').on('value', snap => document.getElementById('ans-count').innerText = snap.numChildren());
 
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
+        function resetAllScores() {
+            if(confirm("정말 모든 참가자의 점수를 0점으로 초기화하시겠습니까?")) {
+                db.ref('players').once('value', snap => {
+                    const updates = {};
+                    snap.forEach(child => {
+                        updates[child.key + '/score'] = 0;
+                    });
+                    db.ref('players').update(updates);
+                    db.ref('answers').remove();
+                    alert("초기화 완료!");
+                });
+            }
         }
 
         function startGame() {
-            if(quizData.length === 0) return alert("문제를 불러오는 중입니다...");
-            showScreen('game-screen');
+            if(quizData.length === 0) return alert("로딩된 문제가 없습니다.");
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById('game-screen').classList.add('active');
             nextQuestion();
         }
 
         function nextQuestion() {
             currentQIndex++;
-
-            // 게임 끝 체크
             if (currentQIndex >= quizData.length) {
-                finishGame('final');
+                finishGame();
                 return;
             }
 
-            const q = quizData[currentQIndex];
-            
-            // ★ 라운드 변경 체크 로직
-            // 이전 문제가 있었고, 현재 문제의 라운드가 이전과 다르면 -> 라운드 종료 화면
-            if(currentQIndex > 0) {
-                const prevQ = quizData[currentQIndex - 1];
-                if(q.round && prevQ.round && q.round != prevQ.round) {
-                    currentQIndex--; // 인덱스 되돌리고(다음 라운드 첫 문제는 대기)
-                    finishGame('round'); // 라운드 종료 화면 호출
-                    return;
-                }
-            }
-
-            // 문제 세팅
             isAnswerChecked = false;
-            currentTimeLimit = q.time;
-            currentRoundPoints = q.point; // ★ 배점 적용
+            const q = quizData[currentQIndex];
+            currentTimeLimit = q.time; 
             
-            // 라운드 표시
-            const rBadge = document.getElementById('round-display');
-            if(q.round) {
-                rBadge.innerText = "ROUND " + q.round + " (" + currentRoundPoints + "점)";
-                rBadge.style.display = 'inline-block';
-            } else {
-                rBadge.style.display = 'none';
-            }
-
+            // ★ 수정됨: 한글 '배점' 컬럼 인식 (없으면 point, 없으면 1000)
+            const currentPoint = q['배점'] ? q['배점'] : (q.point ? q.point : 1000);
+            
             document.getElementById('q-text').innerText = q.q;
+            document.getElementById('q-point-badge').innerText = `배점: ${currentPoint}점`; 
+            
             document.getElementById('ans-count').innerText = "0";
             document.getElementById('next-btn').innerText = "정답 확인";
+            document.getElementById('next-btn').disabled = false;
             document.getElementById('live-rank-box').style.display = 'none';
             document.getElementById('opt-container').style.display = 'grid';
             
@@ -212,10 +205,13 @@ measurementId: "G-8GL8G5NCQF"
                     container.innerHTML += `<div class="opt opt-${idx+1}" id="opt-${idx}">${['▲','■','●','◆'][idx]} ${opt}</div>`;
                 });
             } else if(q.type === 'ox') {
-                container.innerHTML = `<div class="opt opt-1" id="opt-0" style="background:#E74C3C">O</div><div class="opt opt-2" id="opt-1" style="background:#3498DB">X</div>`;
+                container.innerHTML = `
+                    <div class="opt opt-1" id="opt-0" style="background:#E74C3C">O (그렇다)</div>
+                    <div class="opt opt-2" id="opt-1" style="background:#3498DB">X (아니다)</div>
+                `;
             } else {
                 container.style.display = 'none'; 
-                container.innerHTML = `<div style="text-align:center; width:200%; font-size:1.5rem; color:#888;">주관식 입력 대기중...</div>`;
+                container.innerHTML = `<div style="text-align:center; width:200%; font-size:1.5rem; color:#888;">주관식 문제입니다.</div>`;
             }
 
             db.ref('gameStatus').set({ state: 'play', type: q.type });
@@ -230,10 +226,12 @@ measurementId: "G-8GL8G5NCQF"
             let timeLeft = seconds;
             document.getElementById('time-left').innerText = timeLeft;
             document.getElementById('timer-bar').style.width = '100%';
-            document.getElementById('timer-bar').style.transition = `width ${seconds}s linear`;
+            document.getElementById('timer-bar').style.transition = 'none';
             
-            // 타이머 애니메이션 리셋 트릭
-            setTimeout(() => { document.getElementById('timer-bar').style.width = '0%'; }, 50);
+            setTimeout(() => {
+                 document.getElementById('timer-bar').style.transition = `width ${seconds}s linear`;
+                 document.getElementById('timer-bar').style.width = '0%';
+            }, 50);
 
             timerInterval = setInterval(() => {
                 timeLeft--;
@@ -246,20 +244,29 @@ measurementId: "G-8GL8G5NCQF"
         }
 
         function manualCheck() {
-            if(!isAnswerChecked) { clearInterval(timerInterval); checkAnswer(); }
-            else { nextQuestion(); }
+            if(!isAnswerChecked) {
+                clearInterval(timerInterval);
+                checkAnswer();
+            } else {
+                nextQuestion();
+            }
         }
 
         function checkAnswer() {
             if (isAnswerChecked) return;
             isAnswerChecked = true;
+
             document.getElementById('next-btn').innerText = "다음 문제 >";
             document.getElementById('time-left').innerText = "STOP";
             db.ref('gameStatus').set({ state: 'wait' });
 
             const q = quizData[currentQIndex];
+            
+            // ★ 수정됨: 정답 계산시에도 한글 '배점' 우선 확인
+            let maxPoint = 1000;
+            if (q['배점']) maxPoint = parseInt(q['배점']);
+            else if (q.point) maxPoint = parseInt(q.point);
 
-            // 정답 공개
             if(q.type !== 'input') {
                 const ansId = `opt-${q.ans}`;
                 if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
@@ -267,10 +274,13 @@ measurementId: "G-8GL8G5NCQF"
                 document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
             }
 
-            // ★ 채점 로직 (배점 반영)
             db.ref('answers').once('value', snapshot => {
-                const answers = snapshot.val() || {};
-                
+                const answers = snapshot.val();
+                if(!answers) {
+                    showLiveRank();
+                    return;
+                }
+
                 for (const playerId in answers) {
                     const data = answers[playerId];
                     const playerAns = data.answer;
@@ -278,82 +288,75 @@ measurementId: "G-8GL8G5NCQF"
 
                     let isCorrect = false;
                     if(q.type === 'input') {
-                        if(String(playerAns).replace(/\s/g, "") === String(q.ans).replace(/\s/g, "")) isCorrect = true;
+                        if(playerAns && String(playerAns).replace(/\s/g, "") === String(q.ans).replace(/\s/g, "")) isCorrect = true;
                     } else {
                         if(String(playerAns) === String(q.ans)) isCorrect = true;
                     }
 
                     if(isCorrect) {
                         const timeTaken = (playerTime - questionStartTime) / 1000;
-                        // 공식: (배점 절반) + (나머지 절반 * 남은시간비율)
-                        // 예: 2000점 문제 -> 기본 1000점 확보 + 빨리풀면 최대 1000점 추가
                         let scoreRatio = Math.max(0, (currentTimeLimit - timeTaken) / currentTimeLimit);
-                        let point = Math.round((currentRoundPoints * 0.5) + (currentRoundPoints * 0.5 * scoreRatio));
+                        
+                        let earnedPoint = Math.round((maxPoint * 0.5) + ((maxPoint * 0.5) * scoreRatio));
 
-                        db.ref(`players/${playerId}/score`).transaction(score => (score || 0) + point);
+                        db.ref(`players/${playerId}/score`).transaction(currentScore => {
+                            return (currentScore || 0) + earnedPoint;
+                        });
                     }
                 }
-                setTimeout(showLiveRank, 1000);
+                setTimeout(showLiveRank, 800); 
             });
         }
 
-        // 실시간 랭킹 (5위까지)
         function showLiveRank() {
             db.ref('players').orderByChild('score').limitToLast(5).once('value', snapshot => {
-                renderRank(snapshot, 'live-rank-list');
-                document.getElementById('live-rank-box').style.display = 'block';
+                const list = [];
+                snapshot.forEach(child => list.push(child.val()));
+                list.reverse();
+
+                const rankBox = document.getElementById('live-rank-box');
+                const rankList = document.getElementById('live-rank-list');
+                rankList.innerHTML = "";
+                
+                if (list.length === 0) {
+                    rankList.innerHTML = "<div style='padding:10px;'>아직 득점자가 없습니다.</div>";
+                } else {
+                    list.forEach((p, idx) => {
+                        rankList.innerHTML += `
+                            <div class="live-rank-item">
+                                <span>${idx+1}. ${p.name}</span>
+                                <span>${p.score || 0}점</span>
+                            </div>`;
+                    });
+                }
+                
+                rankBox.style.display = 'block';
                 document.getElementById('opt-container').style.display = 'none';
             });
         }
 
-        // 라운드/최종 종료 처리
-        function finishGame(mode) {
-            if(mode === 'round') {
-                showScreen('round-end-screen');
-                // 라운드 랭킹 표시
-                db.ref('players').orderByChild('score').limitToLast(10).once('value', snapshot => {
-                    renderRank(snapshot, 'round-rank-board');
+        function finishGame() {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById('result-screen').classList.add('active');
+
+            db.ref('players').orderByChild('score').limitToLast(10).once('value', snapshot => {
+                const list = [];
+                snapshot.forEach(child => list.push(child.val()));
+                list.reverse(); 
+
+                const board = document.getElementById('rank-board');
+                board.innerHTML = "";
+                list.forEach((p, idx) => {
+                    let medal = idx < 3 ? ['🥇','🥈','🥉'][idx] : `${idx+1}위`;
+                    let style = idx === 0 ? 'color:#D4AF37; font-weight:bold; font-size:1.5em;' : '';
+                    board.innerHTML += `
+                        <div class="rank-item" style="${style}">
+                            <span>${medal} ${p.name}</span>
+                            <span>${p.score || 0}점</span>
+                        </div>`;
                 });
-            } else {
-                showScreen('result-screen');
-                // 최종 랭킹 표시
-                db.ref('players').orderByChild('score').limitToLast(10).once('value', snapshot => {
-                    renderRank(snapshot, 'final-rank-board');
-                });
-            }
-        }
-
-        // ★ 점수 초기화 후 다음 라운드 진행
-        function startNextRound() {
-            if(!confirm("정말 점수를 초기화하고 다음 라운드를 시작할까요?")) return;
-
-            // Firebase의 모든 플레이어 점수를 0으로 리셋
-            db.ref('players').once('value', snapshot => {
-                snapshot.forEach(child => {
-                    child.ref.update({ score: 0 });
-                });
-            }).then(() => {
-                currentQIndex++; // 멈췄던 인덱스 다음으로 이동
-                showScreen('game-screen');
-                nextQuestion(); // 다음 라운드 첫 문제 시작
-            });
-        }
-
-        // 랭킹 그리기 도우미 함수
-        function renderRank(snapshot, elementId) {
-            const list = [];
-            snapshot.forEach(child => list.push(child.val()));
-            list.reverse();
-
-            const board = document.getElementById(elementId);
-            board.innerHTML = "";
-            list.forEach((p, idx) => {
-                let medal = idx < 3 ? ['🥇','🥈','🥉'][idx] : `${idx+1}위`;
-                let style = idx === 0 ? 'color:#D4AF37; font-weight:bold;' : '';
-                board.innerHTML += `<div class="rank-item" style="${style}"><span>${medal} ${p.name}</span><span>${p.score || 0}점</span></div>`;
             });
         }
     </script>
 </body>
 </html>
-
