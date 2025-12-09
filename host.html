@@ -2,210 +2,355 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Grand Game Center - Host</title>
+    <title>The Grand Quiz - Host</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <style>
         :root { --gb-pink: #F7CAC9; --gb-purple: #5D3A5D; --gb-gold: #D4AF37; --gb-red: #C0392B; }
         body { background-color: var(--gb-pink); color: var(--gb-purple); font-family: 'GmarketSansMedium', sans-serif; margin: 0; text-align: center; display: flex; flex-direction: column; height: 100vh; }
-        .header { background: var(--gb-purple); color: #fff; padding: 15px 20px; border-bottom: 5px solid var(--gb-gold); display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; }
-        .header-left { text-align: left; } .header-center { text-align: center; font-size: 1.8rem; font-weight: bold; white-space: nowrap; } .header-right { text-align: right; font-size: 1rem; opacity: 0.8; }
-        .home-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 1rem; cursor: pointer; padding: 8px 15px; border-radius: 20px; transition: 0.3s; display: inline-flex; align-items: center; gap: 5px; }
+        .header { background: var(--gb-purple); color: #fff; padding: 20px; font-size: 2rem; border-bottom: 5px solid var(--gb-gold); display: flex; justify-content: space-between; align-items: center; padding-left: 40px; padding-right: 40px;}
+        
         .main { flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column; width: 100%; position: relative; }
         .screen { display: none; width: 80%; max-width: 900px; }
         .active { display: block; }
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; max-width: 800px; }
-        .menu-card { background: #fff; padding: 40px; border-radius: 15px; border: 3px solid var(--gb-gold); cursor: pointer; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .menu-title { font-size: 1.8rem; font-weight: bold; }
-        .question-box { background: #fff; padding: 40px; border-radius: 10px; border: 3px solid var(--gb-gold); font-size: 2.5rem; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); word-break: keep-all; font-weight: bold; position: relative; }
-        .q-hint { display: block; font-size: 1.5rem; color: #666; margin-top: 15px; font-weight: normal; }
-        .quiz-image { max-width: 100%; max-height: 400px; display: none; margin-top: 20px; border-radius: 10px; } 
+
+        /* QR 영역 */
+        #qr-area { background: #fff; padding: 20px; border: 4px solid var(--gb-gold); display: inline-block; min-width: 200px; min-height: 200px; }
+        #qr-area img { display: block; margin: 0 auto; }
+
+        /* 라운드 정보 배지 */
+        .round-badge { background: var(--gb-gold); color: #fff; padding: 5px 15px; border-radius: 20px; font-size: 1.2rem; margin-bottom: 10px; display: inline-block; font-weight: bold; }
+
+        /* 문제 화면 */
         .timer-container { width: 100%; height: 15px; background: #ddd; position: absolute; top: 0; left: 0; }
         .timer-bar { height: 100%; background: var(--gb-red); width: 100%; transition: width 1s linear; }
+        .question-box { background: #fff; padding: 40px; border-radius: 10px; border: 3px solid var(--gb-gold); font-size: 2.2rem; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); word-break: keep-all; font-weight: bold; position: relative; }
         .time-badge { position: absolute; top: -30px; right: -30px; background: var(--gb-purple); color: #fff; width: 80px; height: 80px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2rem; border: 4px solid var(--gb-gold); }
+
+        /* 보기 및 랭킹 */
         .options-display { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
         .opt { padding: 25px; color: white; font-size: 1.5rem; border-radius: 15px; opacity: 0.6; transition: 0.3s; font-weight: bold; }
-        .opt.reveal { opacity: 1; border: 5px solid var(--gb-gold); transform: scale(1.05); }
-        .opt-1 { background: #E74C3C; } .opt-2 { background: #3498DB; } .opt-3 { background: #F1C40F; color: black; } .opt-4 { background: #2ECC71; }
-        #live-rank-box, #explanation-box { display: none; margin-top: 20px; background: #fff; padding: 20px; border: 2px solid var(--gb-gold); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; }
-        #explanation-box { background: var(--gb-purple); color: #fff; text-align: left; }
-        .exp-title { color: var(--gb-gold); font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; } .exp-text { font-size: 1.5rem; line-height: 1.5; }
+        .opt.reveal { opacity: 1; border: 5px solid var(--gb-gold); transform: scale(1.05); box-shadow: 0 0 20px var(--gb-gold); }
+        .opt-1 { background: #E74C3C; } .opt-2 { background: #3498DB; } 
+        .opt-3 { background: #F1C40F; color: black; } .opt-4 { background: #2ECC71; }
+
+        #live-rank-box { display: none; margin-top: 20px; background: #fff; padding: 20px; border: 2px solid var(--gb-gold); border-radius: 10px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .live-rank-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; font-size: 1.5rem; }
+        
+        /* 라운드 종료 화면 */
+        #round-screen { background: rgba(255, 255, 255, 0.9); padding: 50px; border-radius: 20px; border: 5px solid var(--gb-purple); }
+        .rank-list { text-align: left; background: #fff; padding: 30px; border-radius: 15px; border: 3px solid var(--gb-gold); max-height: 500px; overflow-y: auto; }
+        .rank-item { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-size: 1.3rem; }
+
         .btn { padding: 15px 40px; background: var(--gb-purple); color: white; border: none; font-size: 1.2rem; cursor: pointer; margin-top: 30px; border-radius: 50px; }
-        .reset-btn { background: #e0e0e0; color: #555; border: none; padding: 8px 16px; border-radius: 20px; margin-top: 15px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
-        #round-screen { background: var(--gb-purple); color: white; display: none; width: 100%; height: 100%; justify-content: center; align-items: center; flex-direction: column; position: absolute; top: 0; left: 0; z-index: 100; }
-        .round-title { font-size: 5rem; font-weight: bold; color: var(--gb-gold); margin-bottom: 20px; text-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .round-btn { background: var(--gb-gold); color: var(--gb-purple); font-size: 1.5rem; padding: 15px 40px; border: none; border-radius: 50px; margin-top: 50px; cursor: pointer; font-weight: bold; }
+        .btn:hover { background: #4a2d4a; transform: scale(1.05); }
+        .btn-reset { background: var(--gb-red); }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="header-left"><button class="home-btn" onclick="showMainMenu()">🏠 Home</button></div>
-        <div class="header-center">The 우아한 게임 이야기</div>
-        <div class="header-right">Host Mode</div>
+        <span>🏨 The Grand Dev Gala</span>
+        <span style="font-size:1rem;">Host Mode</span>
     </div>
+
     <div class="main">
-        <div id="menu-screen" class="screen active">
-            <h1 style="font-size:3rem; margin-bottom:50px;">Select Game</h1>
-            <div class="menu-grid">
-                <div class="menu-card" onclick="selectGameMode('main')"><div class="menu-title">🏆 메인 퀴즈</div></div>
-                <div class="menu-card" onclick="selectGameMode('consonant')"><div class="menu-title">🧩 자음 퀴즈</div></div>
-                <div class="menu-card" onclick="selectGameMode('image')"><div class="menu-title">🔍 이미지 퀴즈</div></div>
-                <div class="menu-card" onclick="selectGameMode('desc')"><div class="menu-title">📝 설명 퀴즈</div></div>
+        <div id="lobby-screen" class="screen active">
+            <h1 style="font-size:3rem; margin-bottom:10px;">Check-In</h1>
+            <div id="qr-area"></div>
+            <p style="font-size:1.5rem;">QR코드를 스캔하여 입장하세요</p>
+            <div style="font-size:2rem; margin-top:30px; color:var(--gb-purple); font-weight:bold;">
+                입장객: <span id="p-count" style="color:var(--gb-red);">0</span>명
             </div>
-            <div style="margin-top:40px; font-size:1.2rem;">접속자: <span id="total-p-count" style="color:var(--gb-red); font-weight:bold;">0</span>명</div>
+            <button class="btn" onclick="startGame()">EVENT START 🎬</button>
         </div>
-        <div id="lobby-screen" class="screen">
-            <h1 id="lobby-title" style="font-size:3rem;">Game Ready</h1>
-            <div id="qr-area" style="background:#fff; padding:20px; border:4px solid var(--gb-gold); display:inline-block; margin:20px 0;"></div>
-            <div style="font-size:2rem; margin-top:20px; font-weight:bold;">참가자: <span id="p-count" style="color:var(--gb-red);">0</span>명</div>
-            <button class="reset-btn" onclick="resetPlayers()">🔄 참여자 초기화</button><br>
-            <button class="btn" onclick="startGame()">GAME START 🎬</button>
-        </div>
-        <div id="round-screen"><div class="round-title" id="round-title-text">ROUND 1</div><button class="round-btn" onclick="startRound()">START ROUND ▶</button></div>
+
         <div id="game-screen" class="screen">
+            <div id="round-display" class="round-badge" style="display:none;">ROUND 1</div>
             <div class="timer-container"><div class="timer-bar" id="timer-bar"></div></div>
-            <div class="question-box"><span id="q-text">문제</span><img id="q-image" class="quiz-image" src="" alt="Img"><div class="time-badge" id="time-left">0</div></div>
+            
+            <div class="question-box">
+                <span id="q-text">문제 로딩 중...</span>
+                <div class="time-badge" id="time-left">0</div>
+            </div>
+            
             <div class="options-display" id="opt-container"></div>
-            <div id="explanation-box"><div class="exp-title">💡 Comment</div><div id="exp-text" class="exp-text"></div></div>
-            <div id="live-rank-box"><h3 style="margin:0 0 10px 0; color:var(--gb-purple);">🏆 TOP 5</h3><div id="live-rank-list"></div></div>
-            <div style="margin-top:20px;">응답: <span id="ans-count" style="font-weight:bold; color:var(--gb-purple);">0</span>명</div>
+            
+            <div id="live-rank-box">
+                <h3 style="margin:0 0 10px 0; color:var(--gb-purple);">🏆 현재 순위</h3>
+                <div id="live-rank-list"></div>
+            </div>
+            
+            <div style="margin-top:20px; font-size:1.2rem; color:#555;">
+                응답: <span id="ans-count" style="font-weight:bold; color:var(--gb-purple);">0</span>명
+            </div>
             <button class="btn" id="next-btn" onclick="manualCheck()">정답 확인</button>
         </div>
+
+        <div id="round-end-screen" class="screen">
+            <h1 style="font-size:3rem; color:var(--gb-purple)">🎉 ROUND 종료!</h1>
+            <h3>이번 라운드 우승자는?</h3>
+            <div class="rank-list" id="round-rank-board"></div>
+            <p style="color:var(--gb-red); margin-top:20px;">* 다음 라운드를 위해 점수가 초기화됩니다.</p>
+            <button class="btn btn-reset" onclick="startNextRound()">다음 라운드 시작 (점수 리셋)</button>
+        </div>
+
         <div id="result-screen" class="screen">
-            <h1 style="font-size:3rem; color:var(--gb-purple)">🏆 명예의 전당</h1>
-            <div class="rank-list" id="rank-board" style="text-align:left; background:#fff; padding:30px; border:3px solid var(--gb-gold); margin-bottom:20px; max-height:500px; overflow-y:auto;"></div>
-            <button class="btn" onclick="showMainMenu()">메인 메뉴</button>
+            <h1 style="font-size:3rem; color:var(--gb-purple)">🏆 최종 명예의 전당 🏆</h1>
+            <div class="rank-list" id="final-rank-board"></div>
+            <button class="btn" onclick="location.reload()">새로운 게임</button>
         </div>
     </div>
-    <script>
-        const firebaseConfig = { apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks", authDomain: "thegranddvegala.firebaseapp.com", databaseURL: "https://thegranddvegala-default-rtdb.firebaseio.com", projectId: "thegranddvegala", storageBucket: "thegranddvegala.firebasestorage.app", messagingSenderId: "980091305368", appId: "1:980091305368:web:e247f9be81e6786888bfed", measurementId: "G-8GL8G5NCQF" };
-        firebase.initializeApp(firebaseConfig); const db = firebase.database();
-        const SHEET_URL = "https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec";
 
-        let allQuizData=[], currentGameData=[], playQueue=[], queueIndex=-1, isAnswerChecked=false, timerInterval=null, questionStartTime=0, currentTimeLimit=0;
+    <script>
+        // ★★★ 설정 (본인 정보 입력) ★★★
+        const firebaseConfig = {
+            apiKey: "여기에_API_KEY",
+            authDomain: "여기에_AUTH_DOMAIN",
+            databaseURL: "여기에_DATABASE_URL",
+            projectId: "여기에_PROJECT_ID",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+        const SHEET_URL = "여기에_새_구글스크립트_URL";
+        // ------------------------------------
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let quizData = [];
+        let currentQIndex = -1;
+        let isAnswerChecked = false;
+        let timerInterval = null;
+        let questionStartTime = 0;
+        let currentTimeLimit = 0;
+        let currentRoundPoints = 1000; // 기본값
+
+        // QR코드
         const clientURL = window.location.href.replace('host.html', 'client.html');
         if(clientURL) new QRCode(document.getElementById("qr-area"), { text: clientURL, width: 200, height: 200 });
 
-        window.onload = function() { fetch(SHEET_URL).then(res=>res.json()).then(data=>{ allQuizData=data; console.log("Loaded:",data.length); }).catch(err=>alert("시트 로딩 실패!")); };
-        db.ref('players').on('value', snap => { const c=snap.numChildren(); document.getElementById('p-count').innerText=c; document.getElementById('total-p-count').innerText=c; });
-        db.ref('answers').on('value', snap => document.getElementById('ans-count').innerText=snap.numChildren());
+        // 데이터 로드
+        window.onload = function() {
+            if(!SHEET_URL || SHEET_URL.includes("여기에")) {
+                alert("구글 시트 URL을 설정해주세요!"); 
+                return;
+            }
+            fetch(SHEET_URL)
+                .then(res => res.json())
+                .then(data => {
+                    quizData = data;
+                    console.log("문제 로딩 완료:", quizData);
+                })
+                .catch(err => alert("문제 불러오기 실패! 시트 권한을 확인하세요."));
+        };
 
-        function resetPlayers() { if(confirm("정말 초기화 하시겠습니까?")) { db.ref('players').remove(); db.ref('answers').remove(); db.ref('gameStatus').set({state:'lobby'}); alert("완료"); } }
-        function showMainMenu() { document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active')); document.getElementById('menu-screen').classList.add('active'); db.ref('gameStatus').set({state:'lobby'}); }
-        
-        function selectGameMode(cat) { 
-            currentGameData = allQuizData.filter(i=>i.category===cat); if(currentGameData.length==0) return alert("오류: "+cat+" 모드 문제 없음.");
-            playQueue=[]; let lastRound="";
-            currentGameData.forEach(q => { if(q.round && q.round!=lastRound) { playQueue.push({isRoundCover:true, title:"ROUND "+q.round}); lastRound=q.round; } playQueue.push(q); });
-            document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active')); document.getElementById('lobby-screen').classList.add('active');
-            let t="Game Ready"; if(cat=='consonant') t="🧩 자음 퀴즈"; if(cat=='image') t="🔍 이미지 퀴즈"; if(cat=='desc') t="📝 설명 퀴즈";
-            document.getElementById('lobby-title').innerText=t;
-        }
-        function startGame() { queueIndex=-1; document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active')); document.getElementById('game-screen').classList.add('active'); nextStep(); }
-        function nextStep() {
-            queueIndex++; if(queueIndex>=playQueue.length) { finishGame(); return; }
-            const item=playQueue[queueIndex];
-            if(item.isRoundCover) { document.getElementById('round-title-text').innerText=item.title; document.getElementById('round-screen').style.display='flex'; db.ref('gameStatus').set({state:'wait'}); }
-            else { loadQuestion(item); }
-        }
-        function startRound() { document.getElementById('round-screen').style.display='none'; nextStep(); }
+        db.ref('players').on('value', snap => document.getElementById('p-count').innerText = snap.numChildren());
+        db.ref('answers').on('value', snap => document.getElementById('ans-count').innerText = snap.numChildren());
 
-        function loadQuestion(q) {
-            isAnswerChecked=false; currentTimeLimit=q.time;
-            let displayQ=q.q; if(displayQ.includes('\n')) { const parts=displayQ.split('\n'); displayQ=`${parts[0]}<span class="q-hint">${parts.slice(1).join('<br>')}</span>`; }
-            document.getElementById('q-text').innerHTML=displayQ;
-            const imgEl=document.getElementById('q-image'); if(q.img&&q.img.startsWith('http')) { imgEl.src=q.img; imgEl.style.display='block'; } else { imgEl.style.display='none'; }
-            document.getElementById('ans-count').innerText="0"; document.getElementById('next-btn').innerText="정답 확인";
-            document.getElementById('live-rank-box').style.display='none'; document.getElementById('explanation-box').style.display='none'; document.getElementById('opt-container').style.display='grid';
-            const con=document.getElementById('opt-container'); con.innerHTML='';
-            if(q.type==='choice'||q.type==='seq') { q.options.forEach((opt,idx) => { con.innerHTML += `<div class="opt opt-${idx+1}" id="opt-${idx}">${['▲','■','●','◆'][idx]} ${opt}</div>`; }); }
-            else if(q.type==='ox') { con.innerHTML = `<div class="opt opt-1" id="opt-0" style="background:#E74C3C">O</div><div class="opt opt-2" id="opt-1" style="background:#3498DB">X</div>`; }
-            else { con.style.display='none'; con.innerHTML=`<div style="text-align:center;width:200%;font-size:1.5rem;color:#888;">📱 폰에서 입력해주세요!</div>`; }
-            db.ref('gameStatus').set({ state:'play', type:q.type }); db.ref('answers').remove();
-            questionStartTime=Date.now(); startTimer(currentTimeLimit);
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
         }
 
-        function startTimer(s) { clearInterval(timerInterval); let t=s; document.getElementById('time-left').innerText=t; document.getElementById('timer-bar').style.width='100%'; document.getElementById('timer-bar').style.transition='none'; setTimeout(()=>{document.getElementById('timer-bar').style.transition=`width ${s}s linear`;document.getElementById('timer-bar').style.width='0%';},50); timerInterval=setInterval(()=>{t--;document.getElementById('time-left').innerText=t;if(t<=0){clearInterval(timerInterval);checkAnswer();}},1000); }
-        function manualCheck() { if(!isAnswerChecked) { clearInterval(timerInterval); checkAnswer(); } else { nextStep(); } }
+        function startGame() {
+            if(quizData.length === 0) return alert("문제를 불러오는 중입니다...");
+            showScreen('game-screen');
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            currentQIndex++;
+
+            // 게임 끝 체크
+            if (currentQIndex >= quizData.length) {
+                finishGame('final');
+                return;
+            }
+
+            const q = quizData[currentQIndex];
+            
+            // ★ 라운드 변경 체크 로직
+            // 이전 문제가 있었고, 현재 문제의 라운드가 이전과 다르면 -> 라운드 종료 화면
+            if(currentQIndex > 0) {
+                const prevQ = quizData[currentQIndex - 1];
+                if(q.round && prevQ.round && q.round != prevQ.round) {
+                    currentQIndex--; // 인덱스 되돌리고(다음 라운드 첫 문제는 대기)
+                    finishGame('round'); // 라운드 종료 화면 호출
+                    return;
+                }
+            }
+
+            // 문제 세팅
+            isAnswerChecked = false;
+            currentTimeLimit = q.time;
+            currentRoundPoints = q.point; // ★ 배점 적용
+            
+            // 라운드 표시
+            const rBadge = document.getElementById('round-display');
+            if(q.round) {
+                rBadge.innerText = "ROUND " + q.round + " (" + currentRoundPoints + "점)";
+                rBadge.style.display = 'inline-block';
+            } else {
+                rBadge.style.display = 'none';
+            }
+
+            document.getElementById('q-text').innerText = q.q;
+            document.getElementById('ans-count').innerText = "0";
+            document.getElementById('next-btn').innerText = "정답 확인";
+            document.getElementById('live-rank-box').style.display = 'none';
+            document.getElementById('opt-container').style.display = 'grid';
+            
+            const container = document.getElementById('opt-container');
+            container.innerHTML = '';
+            
+            if(q.type === 'choice') {
+                q.options.forEach((opt, idx) => {
+                    container.innerHTML += `<div class="opt opt-${idx+1}" id="opt-${idx}">${['▲','■','●','◆'][idx]} ${opt}</div>`;
+                });
+            } else if(q.type === 'ox') {
+                container.innerHTML = `<div class="opt opt-1" id="opt-0" style="background:#E74C3C">O</div><div class="opt opt-2" id="opt-1" style="background:#3498DB">X</div>`;
+            } else {
+                container.style.display = 'none'; 
+                container.innerHTML = `<div style="text-align:center; width:200%; font-size:1.5rem; color:#888;">주관식 입력 대기중...</div>`;
+            }
+
+            db.ref('gameStatus').set({ state: 'play', type: q.type });
+            db.ref('answers').remove();
+            
+            questionStartTime = Date.now();
+            startTimer(currentTimeLimit);
+        }
+
+        function startTimer(seconds) {
+            clearInterval(timerInterval);
+            let timeLeft = seconds;
+            document.getElementById('time-left').innerText = timeLeft;
+            document.getElementById('timer-bar').style.width = '100%';
+            document.getElementById('timer-bar').style.transition = `width ${seconds}s linear`;
+            
+            // 타이머 애니메이션 리셋 트릭
+            setTimeout(() => { document.getElementById('timer-bar').style.width = '0%'; }, 50);
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time-left').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    checkAnswer(); 
+                }
+            }, 1000);
+        }
+
+        function manualCheck() {
+            if(!isAnswerChecked) { clearInterval(timerInterval); checkAnswer(); }
+            else { nextQuestion(); }
+        }
 
         function checkAnswer() {
-            if(isAnswerChecked) return; isAnswerChecked=true;
-            document.getElementById('next-btn').innerText="다음 문제 >"; document.getElementById('time-left').innerText="STOP";
-            const q = playQueue[queueIndex];
-            db.ref('gameStatus').set({ state: 'result', type: q.type, answer: q.ans });
+            if (isAnswerChecked) return;
+            isAnswerChecked = true;
+            document.getElementById('next-btn').innerText = "다음 문제 >";
+            document.getElementById('time-left').innerText = "STOP";
+            db.ref('gameStatus').set({ state: 'wait' });
 
-            if(q.type!=='input') { if(q.type==='seq') document.getElementById('q-text').innerHTML+=`<br><br><span style="font-size:1.5rem;color:var(--gb-purple);">✅ 정답 순서: ${q.ans}</span>`; else { const ansId=`opt-${q.ans}`; if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal'); } }
-            else { document.getElementById('q-text').innerHTML+=`<br><br><span style="font-size:1.5rem;color:var(--gb-purple);">✅ 정답: ${q.ans}</span>`; }
-            
-            if(q.desc && q.desc.trim()!=="") { document.getElementById('exp-text').innerText=q.desc; document.getElementById('explanation-box').style.display='block'; }
+            const q = quizData[currentQIndex];
 
-            db.ref('answers').once('value', snap => {
-                const answers=snap.val(); if(!answers) { showLiveRank(); return; }
-                for(const pid in answers) {
-                    const d=answers[pid]; let isCorrect=false;
-                    if(String(d.answer).replace(/\s/g,"")===String(q.ans).replace(/\s/g,"")) isCorrect=true;
+            // 정답 공개
+            if(q.type !== 'input') {
+                const ansId = `opt-${q.ans}`;
+                if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
+            } else {
+                document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
+            }
+
+            // ★ 채점 로직 (배점 반영)
+            db.ref('answers').once('value', snapshot => {
+                const answers = snapshot.val() || {};
+                
+                for (const playerId in answers) {
+                    const data = answers[playerId];
+                    const playerAns = data.answer;
+                    const playerTime = data.time || Date.now();
+
+                    let isCorrect = false;
+                    if(q.type === 'input') {
+                        if(String(playerAns).replace(/\s/g, "") === String(q.ans).replace(/\s/g, "")) isCorrect = true;
+                    } else {
+                        if(String(playerAns) === String(q.ans)) isCorrect = true;
+                    }
+
                     if(isCorrect) {
-                        const taken=(d.time-questionStartTime)/1000; const ratio=Math.max(0,(currentTimeLimit-taken)/currentTimeLimit);
-                        const point=Math.round(500+(500*ratio)); db.ref(`players/${pid}/score`).transaction(s=>(s||0)+point);
+                        const timeTaken = (playerTime - questionStartTime) / 1000;
+                        // 공식: (배점 절반) + (나머지 절반 * 남은시간비율)
+                        // 예: 2000점 문제 -> 기본 1000점 확보 + 빨리풀면 최대 1000점 추가
+                        let scoreRatio = Math.max(0, (currentTimeLimit - timeTaken) / currentTimeLimit);
+                        let point = Math.round((currentRoundPoints * 0.5) + (currentRoundPoints * 0.5 * scoreRatio));
+
+                        db.ref(`players/${playerId}/score`).transaction(score => (score || 0) + point);
                     }
                 }
                 setTimeout(showLiveRank, 1000);
             });
         }
 
-        // ★★★ [수정됨] 자바스크립트로 직접 정렬해서 보여주는 함수 (오류 방지) ★★★
-        function showLiveRank() { 
-            db.ref('players').once('value', snapshot => {
-                const list = [];
-                snapshot.forEach(child => {
-                    const val = child.val();
-                    // 점수가 없으면 0점, 이름 없으면 익명
-                    list.push({ name: val.name || "익명", score: parseInt(val.score || 0) });
-                });
-
-                // 점수 높은 순으로 강제 정렬 (내림차순)
-                list.sort((a, b) => b.score - a.score);
-
-                // 상위 5명만 자르기
-                const top5 = list.slice(0, 5);
-
-                const el = document.getElementById('live-rank-list'); 
-                el.innerHTML = (top5.length === 0) ? "<div style='padding:10px'>집계된 순위가 없습니다.</div>" : "";
-                
-                top5.forEach((p, i) => { 
-                    el.innerHTML += `<div style="padding:10px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;font-size:1.3rem;${i==0?'font-weight:bold;color:#D4AF37;background-color:#fffbf0':''}"><span>${i+1}. ${p.name}</span><span>${p.score}</span></div>`; 
-                }); 
-                document.getElementById('live-rank-box').style.display='block'; 
-                document.getElementById('opt-container').style.display='none'; 
-            }); 
+        // 실시간 랭킹 (5위까지)
+        function showLiveRank() {
+            db.ref('players').orderByChild('score').limitToLast(5).once('value', snapshot => {
+                renderRank(snapshot, 'live-rank-list');
+                document.getElementById('live-rank-box').style.display = 'block';
+                document.getElementById('opt-container').style.display = 'none';
+            });
         }
 
-        // ★★★ [수정됨] 최종 결과도 직접 정렬 ★★★
-        function finishGame() { 
-            document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active')); 
-            document.getElementById('result-screen').classList.add('active'); 
-            
-            db.ref('players').once('value', snapshot => { 
-                const list = [];
-                snapshot.forEach(child => {
-                    const val = child.val();
-                    list.push({ name: val.name || "익명", score: parseInt(val.score || 0) });
+        // 라운드/최종 종료 처리
+        function finishGame(mode) {
+            if(mode === 'round') {
+                showScreen('round-end-screen');
+                // 라운드 랭킹 표시
+                db.ref('players').orderByChild('score').limitToLast(10).once('value', snapshot => {
+                    renderRank(snapshot, 'round-rank-board');
                 });
+            } else {
+                showScreen('result-screen');
+                // 최종 랭킹 표시
+                db.ref('players').orderByChild('score').limitToLast(10).once('value', snapshot => {
+                    renderRank(snapshot, 'final-rank-board');
+                });
+            }
+        }
 
-                // 점수 높은 순으로 강제 정렬
-                list.sort((a, b) => b.score - a.score);
-                
-                // 상위 10명만
-                const top10 = list.slice(0, 10);
+        // ★ 점수 초기화 후 다음 라운드 진행
+        function startNextRound() {
+            if(!confirm("정말 점수를 초기화하고 다음 라운드를 시작할까요?")) return;
 
-                const b = document.getElementById('rank-board'); 
-                b.innerHTML = (top10.length === 0) ? "<div style='padding:20px'>참여자 없음</div>" : "";
-                
-                top10.forEach((p, i) => { 
-                    b.innerHTML += `<div style="padding:15px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;font-size:1.4rem;${i==0?'background:#fff9db;color:#D4AF37;font-weight:bold':''}"><span>${i+1}위 ${p.name}</span><span>${p.score}</span></div>`; 
-                }); 
-            }); 
+            // Firebase의 모든 플레이어 점수를 0으로 리셋
+            db.ref('players').once('value', snapshot => {
+                snapshot.forEach(child => {
+                    child.ref.update({ score: 0 });
+                });
+            }).then(() => {
+                currentQIndex++; // 멈췄던 인덱스 다음으로 이동
+                showScreen('game-screen');
+                nextQuestion(); // 다음 라운드 첫 문제 시작
+            });
+        }
+
+        // 랭킹 그리기 도우미 함수
+        function renderRank(snapshot, elementId) {
+            const list = [];
+            snapshot.forEach(child => list.push(child.val()));
+            list.reverse();
+
+            const board = document.getElementById(elementId);
+            board.innerHTML = "";
+            list.forEach((p, idx) => {
+                let medal = idx < 3 ? ['🥇','🥈','🥉'][idx] : `${idx+1}위`;
+                let style = idx === 0 ? 'color:#D4AF37; font-weight:bold;' : '';
+                board.innerHTML += `<div class="rank-item" style="${style}"><span>${medal} ${p.name}</span><span>${p.score || 0}점</span></div>`;
+            });
         }
     </script>
 </body>
