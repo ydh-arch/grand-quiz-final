@@ -23,7 +23,6 @@
         .menu-btn:hover { transform: translateY(-5px); box-shadow: 0 12px 0 #3e263e; filter: brightness(1.1); }
         .menu-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #3e263e; }
 
-        /* 버튼별 색상 */
         .btn-main { background: #5D3A5D; } 
         .btn-consonant { background: #8E44AD; }
         .btn-image { background: #2980B9; }
@@ -63,7 +62,7 @@
     </div>
 
     <div class="main">
-        <!-- 1. 메뉴 선택 화면 (가장 먼저 보임) -->
+        <!-- 1. 메뉴 선택 화면 -->
         <div id="menu-screen" class="screen active">
             <h1 style="font-size:3rem; margin-bottom:40px;">Select Quiz Round</h1>
             <div class="menu-grid">
@@ -86,7 +85,7 @@
             </div>
         </div>
 
-        <!-- 2. 대기실 화면 (QR코드) -->
+        <!-- 2. 대기실 화면 -->
         <div id="lobby-screen" class="screen">
             <h1 id="lobby-title" style="font-size:2.5rem; margin-bottom:10px; color:var(--gb-purple);">Check-In</h1>
             <h3 id="lobby-subtitle" style="color:#666; margin-top:0;">참가자를 기다리는 중...</h3>
@@ -94,16 +93,12 @@
             <div class="lobby-container">
                 <div class="qr-section" id="qr-area"></div>
                 <p style="font-size:1.2rem;">QR코드를 스캔하여 입장하세요</p>
-                
                 <div style="font-size:2rem; color:var(--gb-purple); font-weight:bold;">
                     현재 입장: <span id="p-count" style="color:var(--gb-red); font-size:3rem;">0</span>명
                 </div>
-
                 <div style="display:flex; gap:20px;">
                     <button class="game-btn" onclick="backToMenu()" style="background:#888;">⬅ 메뉴로</button>
-                    <!-- 점수 리셋 버튼 -->
                     <button class="game-btn" onclick="resetAllScores()" style="background:var(--gb-red);">🔄 점수 초기화</button>
-                    <!-- 게임 시작 버튼 -->
                     <button class="game-btn" onclick="startGameReal()">게임 시작 🎬</button>
                 </div>
             </div>
@@ -143,7 +138,7 @@
     </div>
 
     <script>
-        // 1. Firebase 설정 (본인 설정 필수)
+        // 1. Firebase 설정 (필수!)
 const firebaseConfig = {
 apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks",
 authDomain: "thegranddvegala.firebaseapp.com",
@@ -157,7 +152,7 @@ measurementId: "G-8GL8G5NCQF"
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. 구글 시트 웹앱 URL (아까 배포한 스크립트 URL)
+        // 2. 구글 시트 웹앱 URL
         const SHEET_URL = "https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec";
 
         let allQuizData = [];
@@ -168,7 +163,6 @@ measurementId: "G-8GL8G5NCQF"
         let questionStartTime = 0;
         let currentTimeLimit = 0;
 
-        // QR코드 생성
         const clientURL = window.location.href.replace('host.html', 'client.html');
         if(clientURL) {
             new QRCode(document.getElementById("qr-area"), { text: clientURL, width: 200, height: 200 });
@@ -197,29 +191,32 @@ measurementId: "G-8GL8G5NCQF"
         db.ref('players').on('value', snap => document.getElementById('p-count').innerText = snap.numChildren());
         db.ref('answers').on('value', snap => document.getElementById('ans-count').innerText = snap.numChildren());
 
-        // ★ [1단계] 메뉴에서 퀴즈 선택 -> 대기실로 이동
         function selectCategory(keyword) {
             if(allQuizData.length === 0) return alert("데이터 로딩중입니다.");
 
-            // 필터링
-            currentQuizList = allQuizData.filter(item => 
-                item.category && item.category.toString().includes(keyword)
-            );
+            const lowerKeyword = keyword.toString().toLowerCase();
+            currentQuizList = allQuizData.filter(item => {
+                if(!item.category) return false;
+                const cat = item.category.toString().toLowerCase();
+                
+                if(cat.includes(lowerKeyword)) return true;
+                if(lowerKeyword === '메인' && cat.includes('main')) return true;
+                if(lowerKeyword === 'main' && cat.includes('메인')) return true;
+                
+                return false;
+            });
 
             if(currentQuizList.length === 0) {
-                alert(`"${keyword}" 관련 문제가 없습니다. (시트 B열 확인 필요)`);
+                const availableCats = [...new Set(allQuizData.map(d => d.category))].join(", ");
+                alert(`"${keyword}" 관련 문제를 찾을 수 없습니다.\n\n[현재 시트의 구분 값들]\n${availableCats}`);
                 return;
             }
 
-            // 대기실 UI 세팅
             document.getElementById('lobby-title').innerText = `${keyword} 퀴즈`;
             document.getElementById('lobby-subtitle').innerText = `총 ${currentQuizList.length} 문제가 준비되었습니다.`;
-            
-            // 화면 전환 (메뉴 -> 대기실)
             showScreen('lobby-screen');
         }
 
-        // ★ [2단계] 대기실에서 게임 시작 버튼 클릭
         function startGameReal() {
             if(currentQuizList.length === 0) return;
             currentQIndex = -1;
@@ -227,7 +224,6 @@ measurementId: "G-8GL8G5NCQF"
             nextQuestion();
         }
 
-        // 메뉴로 돌아가기
         function backToMenu() {
             showScreen('menu-screen');
             db.ref('gameStatus').set({ state: 'lobby' });
@@ -273,6 +269,7 @@ measurementId: "G-8GL8G5NCQF"
             const container = document.getElementById('opt-container');
             container.innerHTML = '';
 
+            // ★ 문제 유형별 처리 (객관식, OX, 주관식, 순서)
             if(q.type === 'choice') {
                 q.options.forEach((opt, idx) => {
                     container.innerHTML += `<div class="opt opt-${idx+1}" id="opt-${idx}">${['▲','■','●','◆'][idx]} ${opt}</div>`;
@@ -283,8 +280,14 @@ measurementId: "G-8GL8G5NCQF"
                     <div class="opt opt-2" id="opt-1" style="background:#3498DB">X (아니다)</div>
                 `;
             } else {
+                // 주관식 or 순서대로 입력
                 container.style.display = 'none';
-                container.innerHTML = `<div style="text-align:center; width:200%; font-size:1.5rem; color:#888; margin-top:20px;">주관식 문제입니다.</div>`;
+                // ★ 순서 입력일 경우 안내 멘트 변경
+                let guideText = "주관식 문제입니다. 정답을 입력해주세요.";
+                if(q.type === 'order' || q.type === '순서') {
+                    guideText = "순서대로 입력해주세요. (예: 1234, 가나다라)";
+                }
+                container.innerHTML = `<div style="text-align:center; width:200%; font-size:1.5rem; color:#888; margin-top:20px;">${guideText}</div>`;
             }
 
             db.ref('gameStatus').set({ state: 'play', type: q.type });
@@ -333,7 +336,7 @@ measurementId: "G-8GL8G5NCQF"
             const q = currentQuizList[currentQIndex];
             const maxPoint = q.point ? parseInt(q.point) : 1000;
 
-            if(q.type !== 'input') {
+            if(q.type !== 'input' && q.type !== 'order' && q.type !== '순서') {
                 const ansId = `opt-${q.ans}`;
                 if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
             } else {
@@ -351,11 +354,14 @@ measurementId: "G-8GL8G5NCQF"
                     const playerAns = data.answer;
                     const playerTime = data.time || Date.now();
                     let isCorrect = false;
-                    if(q.type === 'input') {
+
+                    // ★ 정답 채점 로직 (모든 공백 제거 후 비교)
+                    if(q.type === 'input' || q.type === 'order' || q.type === '순서') {
                         if(playerAns && String(playerAns).replace(/\s/g, "") === String(q.ans).replace(/\s/g, "")) isCorrect = true;
                     } else {
                         if(String(playerAns) === String(q.ans)) isCorrect = true;
                     }
+
                     if(isCorrect) {
                         const timeTaken = (playerTime - questionStartTime) / 1000;
                         let scoreRatio = Math.max(0, (currentTimeLimit - timeTaken) / currentTimeLimit);
@@ -424,4 +430,3 @@ measurementId: "G-8GL8G5NCQF"
     </script>
 </body>
 </html>
-
