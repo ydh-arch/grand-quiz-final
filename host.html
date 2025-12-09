@@ -18,7 +18,7 @@
 
         /* QR 영역 스타일 */
         #qr-area { background: #fff; padding: 20px; border: 4px solid var(--gb-gold); display: inline-block; min-width: 200px; min-height: 200px; }
-        #qr-area img { display: block; margin: 0 auto; }
+        #qr-area img { display: block; margin: 0 auto; } /* QR 중앙 정렬 */
 
         /* 타이머 바 */
         .timer-container { width: 100%; height: 15px; background: #ddd; position: absolute; top: 0; left: 0; }
@@ -43,7 +43,6 @@
 
         .btn { padding: 15px 40px; background: var(--gb-purple); color: white; border: none; font-size: 1.2rem; cursor: pointer; margin-top: 30px; border-radius: 50px; }
         .btn:hover { background: #4a2d4a; transform: scale(1.05); transition: 0.2s; }
-        .btn-reset { background: var(--gb-red); font-size: 0.9rem; padding: 10px 20px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -61,8 +60,6 @@
                 입장객: <span id="p-count" style="color:var(--gb-red);">0</span>명
             </div>
             <button class="btn" onclick="startGame()">EVENT START 🎬</button>
-            <br>
-            <button class="btn btn-reset" onclick="resetAllScores()">⚠️ 점수/참가자 초기화</button>
         </div>
 
         <div id="game-screen" class="screen">
@@ -71,13 +68,12 @@
             <div class="question-box">
                 <span id="q-text">문제 내용</span>
                 <div class="time-badge" id="time-left">0</div>
-                <div id="q-point-badge" style="font-size:1rem; color:#888; margin-top:10px;">배점: 1000점</div>
             </div>
             
             <div class="options-display" id="opt-container"></div>
             
             <div id="live-rank-box">
-                <h3 style="margin:0 0 10px 0; color:var(--gb-purple);">🏆 현재 순위 (TOP 5)</h3>
+                <h3 style="margin:0 0 10px 0; color:var(--gb-purple);">🏆 현재 TOP 5</h3>
                 <div id="live-rank-list"></div>
             </div>
             
@@ -90,12 +86,12 @@
         <div id="result-screen" class="screen">
             <h1 style="font-size:3rem; color:var(--gb-purple)">🏆 최종 명예의 전당 🏆</h1>
             <div class="rank-list" id="rank-board"></div>
-            <button class="btn" onclick="location.reload()">처음으로</button>
+            <button class="btn" onclick="location.reload()">새로운 게임</button>
         </div>
     </div>
 
     <script>
-        // 1. Firebase 설정
+        // 1. Firebase 설정 (본인 것으로 교체!)
 const firebaseConfig = {
 apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks",
 authDomain: "thegranddvegala.firebaseapp.com",
@@ -106,12 +102,10 @@ messagingSenderId: "980091305368",
 appId: "1:980091305368:web:e247f9be81e6786888bfed",
 measurementId: "G-8GL8G5NCQF"
 };
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. 구글 시트 웹앱 URL
+        // 2. 구글 시트 웹앱 URL (본인 것으로 교체!)
         const SHEET_URL = "https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec";
 
         let quizData = [];
@@ -121,7 +115,9 @@ measurementId: "G-8GL8G5NCQF"
         let questionStartTime = 0;
         let currentTimeLimit = 0;
 
+        // ★★★ QR코드 생성 부분 (복구됨!) ★★★
         const clientURL = window.location.href.replace('host.html', 'client.html');
+        // 혹시 clientURL이 비어있을 경우를 대비해 예외처리
         if(clientURL) {
             new QRCode(document.getElementById("qr-area"), {
                 text: clientURL,
@@ -130,11 +126,13 @@ measurementId: "G-8GL8G5NCQF"
             });
         }
 
+        // 페이지 로드 시 구글 시트에서 문제 가져오기
         window.onload = function() {
             if(!SHEET_URL || SHEET_URL.includes("여기에")) {
-                alert("구글 시트 URL 미입력. 테스트 모드로 실행합니다.");
+                alert("구글 시트 URL을 입력하지 않으셨네요! 기본 문제로 진행합니다.");
+                // 비상용 기본 문제
                 quizData = [
-                    { time: 10, point: 1000, type: 'choice', q: "테스트: 1+1은?", options: ["1", "2", "3", "4"], ans: 1 }
+                    { time: 10, type: 'choice', q: "테스트 문제입니다 (시트 연결 필요)", options: ["A", "B", "C", "D"], ans: 0 }
                 ];
                 return;
             }
@@ -144,32 +142,20 @@ measurementId: "G-8GL8G5NCQF"
                 .then(data => {
                     quizData = data;
                     console.log("문제 로딩 완료:", quizData);
+                    // alert(`성공! 총 ${quizData.length}개의 문제를 불러왔습니다.`); // 너무 자주 뜨면 귀찮으니 주석 처리
                 })
                 .catch(err => {
+                    alert("문제 불러오기 실패! 시트 URL이나 권한을 확인해주세요.");
                     console.error(err);
-                    alert("문제 로딩 실패.");
                 });
         };
 
+        // 실시간 접속자 및 답안 수 감시
         db.ref('players').on('value', snap => document.getElementById('p-count').innerText = snap.numChildren());
         db.ref('answers').on('value', snap => document.getElementById('ans-count').innerText = snap.numChildren());
 
-        function resetAllScores() {
-            if(confirm("정말 모든 참가자의 점수를 0점으로 초기화하시겠습니까?")) {
-                db.ref('players').once('value', snap => {
-                    const updates = {};
-                    snap.forEach(child => {
-                        updates[child.key + '/score'] = 0;
-                    });
-                    db.ref('players').update(updates);
-                    db.ref('answers').remove();
-                    alert("초기화 완료!");
-                });
-            }
-        }
-
         function startGame() {
-            if(quizData.length === 0) return alert("로딩된 문제가 없습니다.");
+            if(quizData.length === 0) return alert("문제를 불러오는 중입니다. 잠시만 기다려주세요!");
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById('game-screen').classList.add('active');
             nextQuestion();
@@ -186,12 +172,7 @@ measurementId: "G-8GL8G5NCQF"
             const q = quizData[currentQIndex];
             currentTimeLimit = q.time; 
             
-            // ★ 수정됨: 한글 '배점' 컬럼 인식 (없으면 point, 없으면 1000)
-            const currentPoint = q['배점'] ? q['배점'] : (q.point ? q.point : 1000);
-            
             document.getElementById('q-text').innerText = q.q;
-            document.getElementById('q-point-badge').innerText = `배점: ${currentPoint}점`; 
-            
             document.getElementById('ans-count').innerText = "0";
             document.getElementById('next-btn').innerText = "정답 확인";
             document.getElementById('next-btn').disabled = false;
@@ -212,7 +193,7 @@ measurementId: "G-8GL8G5NCQF"
                 `;
             } else {
                 container.style.display = 'none'; 
-                container.innerHTML = `<div style="text-align:center; width:200%; font-size:1.5rem; color:#888;">주관식 문제입니다.</div>`;
+                container.innerHTML = `<div style="text-align:center; width:200%; font-size:1.5rem; color:#888;">주관식 문제입니다. 폰에서 입력해주세요.</div>`;
             }
 
             db.ref('gameStatus').set({ state: 'play', type: q.type });
@@ -262,11 +243,6 @@ measurementId: "G-8GL8G5NCQF"
             db.ref('gameStatus').set({ state: 'wait' });
 
             const q = quizData[currentQIndex];
-            
-            // ★ 수정됨: 정답 계산시에도 한글 '배점' 우선 확인
-            let maxPoint = 1000;
-            if (q['배점']) maxPoint = parseInt(q['배점']);
-            else if (q.point) maxPoint = parseInt(q.point);
 
             if(q.type !== 'input') {
                 const ansId = `opt-${q.ans}`;
@@ -297,15 +273,12 @@ measurementId: "G-8GL8G5NCQF"
                     if(isCorrect) {
                         const timeTaken = (playerTime - questionStartTime) / 1000;
                         let scoreRatio = Math.max(0, (currentTimeLimit - timeTaken) / currentTimeLimit);
-                        
-                        let earnedPoint = Math.round((maxPoint * 0.5) + ((maxPoint * 0.5) * scoreRatio));
+                        let point = Math.round(500 + (500 * scoreRatio));
 
-                        db.ref(`players/${playerId}/score`).transaction(currentScore => {
-                            return (currentScore || 0) + earnedPoint;
-                        });
+                        db.ref(`players/${playerId}/score`).transaction(score => (score || 0) + point);
                     }
                 }
-                setTimeout(showLiveRank, 800); 
+                setTimeout(showLiveRank, 1000); 
             });
         }
 
@@ -319,17 +292,13 @@ measurementId: "G-8GL8G5NCQF"
                 const rankList = document.getElementById('live-rank-list');
                 rankList.innerHTML = "";
                 
-                if (list.length === 0) {
-                    rankList.innerHTML = "<div style='padding:10px;'>아직 득점자가 없습니다.</div>";
-                } else {
-                    list.forEach((p, idx) => {
-                        rankList.innerHTML += `
-                            <div class="live-rank-item">
-                                <span>${idx+1}. ${p.name}</span>
-                                <span>${p.score || 0}점</span>
-                            </div>`;
-                    });
-                }
+                list.forEach((p, idx) => {
+                    rankList.innerHTML += `
+                        <div class="live-rank-item">
+                            <span>${idx+1}. ${p.name}</span>
+                            <span>${p.score || 0}점</span>
+                        </div>`;
+                });
                 
                 rankBox.style.display = 'block';
                 document.getElementById('opt-container').style.display = 'none';
@@ -361,4 +330,3 @@ measurementId: "G-8GL8G5NCQF"
     </script>
 </body>
 </html>
-
