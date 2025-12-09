@@ -17,125 +17,102 @@
         .screen { display: none; width: 90%; max-width: 1000px; }
         .active { display: flex; flex-direction: column; align-items: center; }
 
-        /* 1. 메뉴 화면 스타일 */
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 80%; max-width: 800px; }
         .menu-btn { padding: 40px; background: var(--gb-purple); color: white; border: 4px solid var(--gb-gold); font-size: 1.8rem; cursor: pointer; border-radius: 20px; transition: 0.2s; font-weight: bold; box-shadow: 0 8px 0 #3e263e; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .menu-btn:hover { transform: translateY(-5px); box-shadow: 0 12px 0 #3e263e; filter: brightness(1.1); }
-        .menu-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #3e263e; }
-        /* 로딩 전에는 버튼 흐리게 */
-        .menu-btn.loading { opacity: 0.5; cursor: wait; }
+        .menu-btn:hover { transform: translateY(-5px); filter: brightness(1.1); }
+        .btn-main { background: #5D3A5D; } .btn-consonant { background: #8E44AD; }
+        .btn-image { background: #2980B9; } .btn-desc { background: #27AE60; }
 
-        .btn-main { background: #5D3A5D; } 
-        .btn-consonant { background: #8E44AD; }
-        .btn-image { background: #2980B9; }
-        .btn-desc { background: #27AE60; }
-
-        /* 2. 대기실(QR) 스타일 */
         .lobby-container { display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center; width: 100%; }
         .qr-section { background: #fff; padding: 20px; border: 4px solid var(--gb-gold); border-radius: 10px; }
-        
-        /* 3. 게임 화면 요소 */
+
         .timer-container { width: 100%; height: 15px; background: #ddd; position: absolute; top: 0; left: 0; }
         .timer-bar { height: 100%; background: var(--gb-red); width: 100%; transition: width 1s linear; }
 
-        .question-box { background: #fff; padding: 40px; border-radius: 10px; border: 3px solid var(--gb-gold); font-size: 2.2rem; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); word-break: keep-all; font-weight: bold; position: relative; width: 80%; min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .question-box { background: #fff; padding: 30px; border-radius: 10px; border: 3px solid var(--gb-gold); font-size: 2rem; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); word-break: keep-all; font-weight: bold; position: relative; width: 85%; min-height: 180px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.3s; }
         .time-badge { position: absolute; top: -30px; right: -30px; background: var(--gb-purple); color: #fff; width: 80px; height: 80px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2rem; border: 4px solid var(--gb-gold); z-index: 10; }
 
-        .options-display { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 80%; }
+        .options-display { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 85%; }
         .opt { padding: 25px; color: white; font-size: 1.5rem; border-radius: 15px; opacity: 0.6; transition: 0.3s; font-weight: bold; cursor: pointer; }
         .opt.reveal { opacity: 1; border: 5px solid var(--gb-gold); transform: scale(1.05); box-shadow: 0 0 20px var(--gb-gold); }
-        .opt-1 { background: #E74C3C; } .opt-2 { background: #3498DB; } 
-        .opt-3 { background: #F1C40F; color: black; } .opt-4 { background: #2ECC71; }
+        .opt-1 { background: #E74C3C; } .opt-2 { background: #3498DB; } .opt-3 { background: #F1C40F; color: black; } .opt-4 { background: #2ECC71; }
 
-        .game-btn { padding: 15px 40px; background: var(--gb-purple); color: white; border: none; font-size: 1.2rem; cursor: pointer; margin-top: 30px; border-radius: 50px; }
-        .game-btn:hover { transform: scale(1.05); }
-        .round-tag { font-size: 1.2rem; background: #fff; padding: 5px 20px; border-radius: 20px; border: 2px solid var(--gb-gold); color: var(--gb-purple); font-weight: bold; margin-bottom: 15px; }
+        .game-btn { padding: 15px 40px; background: var(--gb-purple); color: white; border: none; font-size: 1.2rem; cursor: pointer; margin-top: 20px; border-radius: 50px; transition: 0.2s; }
+        .btn-next { background: #2ECC71; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        .round-tag { font-size: 1.2rem; background: #fff; padding: 5px 20px; border-radius: 20px; border: 2px solid var(--gb-gold); color: var(--gb-purple); font-weight: bold; margin-bottom: 10px; }
         
-        /* 로딩 상태 표시 (작게) */
-        #status-indicator { font-size: 1rem; color: #fff; background: rgba(0,0,0,0.2); padding: 5px 15px; border-radius: 20px; }
+        .rank-popup { display: none; width: 85%; background: #fff; border: 4px solid var(--gb-gold); border-radius: 15px; padding: 15px; margin-top: 20px; animation: slideUp 0.5s; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .rank-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 1.3rem; }
+        .rank-row:first-child { color: #D4AF37; font-weight: bold; font-size: 1.5rem; }
+        .link-text { font-size: 0.8rem; color: #666; margin-top: 5px; word-break: break-all; max-width: 300px; }
+        
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; display: flex; justify-content: center; align-items: center; font-size: 2rem; z-index: 9999; flex-direction: column; }
     </style>
 </head>
 <body>
+    <div id="loading-overlay"><div>데이터 로딩 중...</div></div>
+
     <div class="header">
         <span>🏨 The Grand Dev Gala</span>
-        <!-- 우측 상단 상태 표시 -->
-        <span id="status-indicator">⏳ 데이터 로딩중...</span>
+        <span id="status-text" style="font-size:1rem;">⏳ 준비중</span>
     </div>
 
     <div class="main">
-        <!-- 1. 메뉴 선택 화면 (바로 보임) -->
         <div id="menu-screen" class="screen active">
-            <h1 style="font-size:3rem; margin-bottom:40px;">Select Quiz Round</h1>
+            <h1 style="font-size:3rem; margin-bottom:40px;">Select Round</h1>
             <div class="menu-grid">
-                <div class="menu-btn btn-main loading" onclick="selectCategory('메인')">
-                    <span>🏨</span>
-                    <span>메인 퀴즈</span>
-                </div>
-                <div class="menu-btn btn-consonant loading" onclick="selectCategory('자음')">
-                    <span>🔤</span>
-                    <span>자음 퀴즈</span>
-                </div>
-                <div class="menu-btn btn-image loading" onclick="selectCategory('이미지')">
-                    <span>🔍</span>
-                    <span>이미지 확대</span>
-                </div>
-                <div class="menu-btn btn-desc loading" onclick="selectCategory('설명')">
-                    <span>📢</span>
-                    <span>설명 퀴즈</span>
-                </div>
+                <div class="menu-btn btn-main" onclick="selectCategory('메인')"><span>🏨</span><span>메인 퀴즈</span></div>
+                <div class="menu-btn btn-consonant" onclick="selectCategory('자음')"><span>🔤</span><span>자음 퀴즈</span></div>
+                <div class="menu-btn btn-image" onclick="selectCategory('이미지')"><span>🔍</span><span>이미지 확대</span></div>
+                <div class="menu-btn btn-desc" onclick="selectCategory('설명')"><span>📢</span><span>설명 퀴즈</span></div>
             </div>
         </div>
 
-        <!-- 2. 대기실 화면 -->
         <div id="lobby-screen" class="screen">
             <h1 id="lobby-title" style="font-size:2.5rem; margin-bottom:10px; color:var(--gb-purple);">Check-In</h1>
-            <h3 id="lobby-subtitle" style="color:#666; margin-top:0;">참가자를 기다리는 중...</h3>
-            
+            <h3 id="lobby-subtitle" style="color:#666; margin-top:0;">대기중...</h3>
             <div class="lobby-container">
-                <div class="qr-section" id="qr-area"></div>
+                <div class="qr-section"><div id="qr-area"></div></div>
+                <p class="link-text" id="client-link-display"></p>
                 <p style="font-size:1.2rem;">QR코드를 스캔하여 입장하세요</p>
                 <div style="font-size:2rem; color:var(--gb-purple); font-weight:bold;">
                     현재 입장: <span id="p-count" style="color:var(--gb-red); font-size:3rem;">0</span>명
                 </div>
                 <div style="display:flex; gap:10px;">
-                    <button class="game-btn" onclick="backToMenu()" style="background:#888; padding:15px 30px;">⬅ 메뉴로</button>
-                    <button class="game-btn" onclick="resetScoresKeepPlayers()" style="background:#E67E22; padding:15px 30px;">🔄 점수만 리셋</button>
-                    <button class="game-btn" onclick="resetAllData()" style="background:var(--gb-red); padding:15px 30px;">⚠️ 완전 초기화</button>
+                    <button class="game-btn" onclick="backToMenu()" style="background:#888;">⬅ 메뉴</button>
+                    <button class="game-btn" onclick="resetScoresKeepPlayers()" style="background:#E67E22;">🔄 점수만 리셋</button>
+                    <button class="game-btn" onclick="resetAllData()" style="background:var(--gb-red);">⚠️ 완전 초기화</button>
                 </div>
                 <button class="game-btn" onclick="startGameReal()" style="font-size:1.5rem; width:100%; max-width:400px;">게임 시작 🎬</button>
             </div>
         </div>
 
-        <!-- 3. 게임 진행 화면 -->
         <div id="game-screen" class="screen">
             <div class="timer-container"><div class="timer-bar" id="timer-bar"></div></div>
             <div class="round-tag" id="round-display">Round 1</div>
-
             <div class="question-box">
                 <img id="q-image" src="" style="max-width:100%; max-height:300px; display:none; margin-bottom:15px; border-radius:10px;">
                 <span id="q-text" style="white-space: pre-wrap;">문제 로딩중...</span>
                 <div class="time-badge" id="time-left">0</div>
                 <div id="q-point-badge" style="font-size:1rem; color:#888; margin-top:15px;">배점: 1000점</div>
             </div>
-            
             <div class="options-display" id="opt-container"></div>
-            
-            <div id="live-rank-box" style="display:none; margin-top:20px; width:80%; background:#fff; padding:15px; border-radius:10px; border:2px solid var(--gb-gold);">
-                <h3 style="margin:0 0 10px 0; color:var(--gb-purple);">🏆 현재 순위 (TOP 5)</h3>
+            <div id="live-rank-box" class="rank-popup">
+                <h3 style="margin:0 0 10px 0; color:var(--gb-purple);">🏆 현재 순위 (Top 5)</h3>
                 <div id="live-rank-list"></div>
             </div>
-            
-            <div style="margin-top:20px; font-size:1.2rem; color:#555;">
+            <div style="margin-top:15px; font-size:1.2rem; color:#555;">
                 응답: <span id="ans-count" style="font-weight:bold; color:var(--gb-purple);">0</span>명
             </div>
-            <button class="game-btn" id="next-btn" onclick="manualCheck()">정답 확인</button>
+            <button class="game-btn" id="action-btn" onclick="handleAction()">정답 & 순위 확인</button>
         </div>
 
-        <!-- 4. 결과 화면 -->
         <div id="result-screen" class="screen">
             <h1 style="font-size:3rem; color:var(--gb-purple)">🏆 라운드 종료 🏆</h1>
             <div class="rank-list" id="rank-board" style="width:60%; margin:0 auto; background:#fff; padding:20px; border-radius:10px; border:3px solid var(--gb-gold); max-height:400px; overflow-y:auto;"></div>
-            
             <div style="margin-top:30px; display:flex; gap:20px; justify-content:center;">
                 <button class="game-btn" onclick="backToMenu()">메뉴로 (점수 유지)</button>
                 <button class="game-btn" onclick="resetScoreAndMenu()" style="background:#E67E22;">점수 초기화 & 메뉴로</button>
@@ -144,87 +121,56 @@
     </div>
 
     <script>
-        // 1. Firebase 설정
-const firebaseConfig = {
-apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks",
-authDomain: "thegranddvegala.firebaseapp.com",
-databaseURL: "https://thegranddvegala-default-rtdb.firebaseio.com",
-projectId: "thegranddvegala",
-storageBucket: "thegranddvegala.firebasestorage.app",
-messagingSenderId: "980091305368",
-appId: "1:980091305368:web:e247f9be81e6786888bfed",
-measurementId: "G-8GL8G5NCQF"
-};
+        // ★★★ Firebase 설정 (본인 것 입력 필수!) ★★★
+        const firebaseConfig = {
+            apiKey: "여기에_API_KEY_입력",
+            authDomain: "여기에_AUTH_DOMAIN_입력",
+            databaseURL: "여기에_DATABASE_URL_입력",
+            projectId: "여기에_PROJECT_ID_입력",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. 구글 시트 웹앱 URL
-        const SHEET_URL = "https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec";
+        // ★★★ 구글 시트 URL 필수 ★★★
+        const SHEET_URL = "여기에_구글스크립트_URL_입력";
 
-        let allQuizData = [];
-        let currentQuizList = [];
-        let currentQIndex = -1;
-        let isAnswerChecked = false;
-        let timerInterval = null;
-        let questionStartTime = 0;
-        let currentTimeLimit = 0;
+        let allQuizData = [], currentQuizList = [], currentQIndex = -1;
+        let isRankShown = false, timerInterval = null, questionStartTime = 0, currentTimeLimit = 0;
 
-        const clientURL = window.location.href.replace('host.html', 'client.html');
-        if(clientURL) {
-            new QRCode(document.getElementById("qr-area"), { text: clientURL, width: 200, height: 200 });
-        }
+        // ★ QR코드 생성 (client.html로 연결)
+        let path = window.location.pathname;
+        let dir = path.substring(0, path.lastIndexOf('/'));
+        const clientURL = window.location.protocol + "//" + window.location.host + dir + "/client.html";
+        document.getElementById("client-link-display").innerText = clientURL;
+        new QRCode(document.getElementById("qr-area"), { text: clientURL, width: 200, height: 200 });
 
         window.onload = function() {
-            if(!SHEET_URL || SHEET_URL.includes("여기에")) {
-                alert("구글 시트 URL을 입력해주세요!");
-                return;
-            }
-            // 로딩 시작 (화면은 이미 떠있음)
-            fetch(SHEET_URL)
-                .then(res => res.json())
-                .then(data => {
-                    allQuizData = data;
-                    console.log("데이터 로드 완료:", allQuizData);
-                    // 로딩 완료 UI 업데이트
-                    document.getElementById('status-indicator').innerText = "✅ 준비 완료";
-                    document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('loading'));
-                })
-                .catch(err => {
-                    console.error(err);
-                    document.getElementById('status-indicator').innerText = "❌ 로딩 실패";
-                    alert("데이터 로딩 실패. 새로고침 해주세요.");
-                });
+            if(!SHEET_URL || SHEET_URL.includes("여기에")) { alert("설정 확인 필요"); return; }
+            fetch(SHEET_URL).then(res => res.json()).then(data => {
+                allQuizData = data;
+                document.getElementById('status-text').innerText = "✅ 준비 완료";
+                document.getElementById('loading-overlay').style.display = 'none';
+                // ★ 중요: 호스트가 켜지면 무조건 클라이언트를 대기 상태로 만듦
+                db.ref('gameStatus').set({ state: 'lobby' }); 
+            }).catch(err => { alert("로딩 실패"); document.getElementById('loading-overlay').style.display = 'none'; });
         };
 
         db.ref('players').on('value', snap => document.getElementById('p-count').innerText = snap.numChildren());
         db.ref('answers').on('value', snap => document.getElementById('ans-count').innerText = snap.numChildren());
 
         function selectCategory(keyword) {
-            if(allQuizData.length === 0) {
-                // 데이터가 아직 안 왔으면 안내
-                alert("아직 데이터를 불러오는 중입니다. 잠시만 기다려주세요!");
-                return;
-            }
-
-            const lowerKeyword = keyword.toString().toLowerCase();
-            currentQuizList = allQuizData.filter(item => {
-                if(!item.category) return false;
-                const cat = item.category.toString().toLowerCase();
-                if(cat.includes(lowerKeyword)) return true;
-                if(lowerKeyword === '메인' && cat.includes('main')) return true;
-                if(lowerKeyword === 'main' && cat.includes('메인')) return true;
-                return false;
-            });
-
-            if(currentQuizList.length === 0) {
-                const availableCats = [...new Set(allQuizData.map(d => d.category))].join(", ");
-                alert(`"${keyword}" 관련 문제를 찾을 수 없습니다.\n\n[현재 시트 값]\n${availableCats}`);
-                return;
-            }
-
+            if(allQuizData.length === 0) return alert("로딩중...");
+            const lower = keyword.toString().toLowerCase();
+            currentQuizList = allQuizData.filter(i => i.category && (i.category.toLowerCase().includes(lower) || (lower==='메인' && i.category.toLowerCase().includes('main'))));
+            if(currentQuizList.length === 0) return alert("해당 문제 없음");
+            
             document.getElementById('lobby-title').innerText = `${keyword} 퀴즈`;
-            document.getElementById('lobby-subtitle').innerText = `총 ${currentQuizList.length} 문제가 준비되었습니다.`;
+            document.getElementById('lobby-subtitle').innerText = `총 ${currentQuizList.length} 문제`;
             showScreen('lobby-screen');
+            db.ref('gameStatus').set({ state: 'lobby' });
         }
 
         function startGameReal() {
@@ -234,204 +180,121 @@ measurementId: "G-8GL8G5NCQF"
             nextQuestion();
         }
 
-        function backToMenu() {
-            showScreen('menu-screen');
-            db.ref('gameStatus').set({ state: 'lobby' });
-        }
+        function backToMenu() { showScreen('menu-screen'); db.ref('gameStatus').set({ state: 'lobby' }); }
+        function showScreen(id) { document.querySelectorAll('.screen').forEach(el => el.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-        function resetScoreAndMenu() {
-            if(confirm("모든 참가자의 점수를 0점으로 만들고 메뉴로 돌아갑니까?")) {
-                db.ref('players').once('value', snap => {
-                    if(snap.exists()) {
-                        const updates = {};
-                        snap.forEach(child => { updates[child.key + '/score'] = 0; });
-                        db.ref('players').update(updates);
-                    }
-                    db.ref('answers').remove();
-                    backToMenu();
-                });
-            }
-        }
-
-        function resetScoresKeepPlayers() {
-            if(confirm("참가자는 유지하고 '점수'만 0점으로 초기화하시겠습니까?")) {
-                db.ref('players').once('value', snap => {
-                    if(!snap.exists()) return alert("참가자가 없습니다.");
-                    const updates = {};
-                    snap.forEach(child => { updates[child.key + '/score'] = 0; });
-                    db.ref('players').update(updates);
-                    db.ref('answers').remove();
-                    alert("점수 초기화 완료 (참가자 유지)");
-                });
-            }
-        }
-
-        function resetAllData() {
-            if(confirm("⚠ 경고: 모든 참가자를 내보내고 점수를 삭제하시겠습니까?")) {
-                db.ref('players').remove(); 
-                db.ref('answers').remove();
-                alert("완전 초기화 완료 (현재 0명)");
-            }
-        }
-
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+        function handleAction() {
+            if(!isRankShown) { clearInterval(timerInterval); checkAnswerAndShowRank(); }
+            else nextQuestion();
         }
 
         function nextQuestion() {
             currentQIndex++;
-            if (currentQIndex >= currentQuizList.length) {
-                finishGame();
-                return;
-            }
-
-            isAnswerChecked = false;
+            if (currentQIndex >= currentQuizList.length) { finishGame(); return; }
+            isRankShown = false;
+            const btn = document.getElementById('action-btn'); btn.innerText = "정답 & 순위 확인"; btn.className = "game-btn";
+            
             const q = currentQuizList[currentQIndex];
-            
             currentTimeLimit = q.time ? parseInt(q.time) : 20;
-            const currentPoint = q.point ? parseInt(q.point) : 1000;
-            const roundTitle = q.round ? q.round : `Q${currentQIndex+1}`;
-            
-            document.getElementById('round-display').innerText = `${q.category} - ${roundTitle}`;
+            const point = q.point ? parseInt(q.point) : 1000;
+            document.getElementById('round-display').innerText = `${q.category} - ${q.round || (currentQIndex+1)}`;
             document.getElementById('q-text').innerText = q.q;
-            document.getElementById('q-point-badge').innerText = `배점: ${currentPoint}점`;
-            
+            document.getElementById('q-point-badge').innerText = `배점: ${point}점`;
             const imgEl = document.getElementById('q-image');
-            if(q.image && q.image.startsWith('http')) {
-                imgEl.src = q.image;
-                imgEl.style.display = 'block';
-            } else {
-                imgEl.style.display = 'none';
-            }
+            imgEl.style.display = (q.image && q.image.startsWith('http')) ? 'block' : 'none';
+            if(q.image) imgEl.src = q.image;
 
             document.getElementById('ans-count').innerText = "0";
-            document.getElementById('next-btn').innerText = "정답 확인";
-            document.getElementById('next-btn').disabled = false;
             document.getElementById('live-rank-box').style.display = 'none';
             document.getElementById('opt-container').style.display = 'grid';
+            
+            const container = document.getElementById('opt-container'); container.innerHTML = '';
+            
+            // ★ 클라이언트가 'seq'를 알아먹도록 타입 변환 (순서/order -> seq)
+            let clientType = q.type;
+            if(q.type === '순서' || q.type === 'order') clientType = 'seq';
+            if(q.type === '주관식') clientType = 'input';
 
-            const container = document.getElementById('opt-container');
-            container.innerHTML = '';
-
-            if(q.type === 'choice') {
-                q.options.forEach((opt, idx) => {
-                    container.innerHTML += `<div class="opt opt-${idx+1}" id="opt-${idx}">${['▲','■','●','◆'][idx]} ${opt}</div>`;
-                });
-            } else if(q.type === 'ox') {
-                container.innerHTML = `
-                    <div class="opt opt-1" id="opt-0" style="background:#E74C3C">O (그렇다)</div>
-                    <div class="opt opt-2" id="opt-1" style="background:#3498DB">X (아니다)</div>
-                `;
-            } else {
+            // 호스트 화면 구성
+            if(q.type === 'choice') q.options.forEach((o,i) => container.innerHTML += `<div class="opt opt-${i+1}" id="opt-${i}">${['▲','■','●','◆'][i]} ${o}</div>`);
+            else if(q.type === 'ox') container.innerHTML = `<div class="opt opt-1" id="opt-0" style="background:#E74C3C">O</div><div class="opt opt-2" id="opt-1" style="background:#3498DB">X</div>`;
+            else {
                 container.style.display = 'none';
-                let guideText = "주관식 문제입니다. 정답을 입력해주세요.";
-                if(q.type === 'order' || q.type === '순서') {
-                    guideText = "순서대로 입력해주세요. (예: 1234, 가나다라)";
-                }
-                container.innerHTML = `<div style="text-align:center; width:200%; font-size:1.5rem; color:#888; margin-top:20px;">${guideText}</div>`;
+                let guide = (clientType === 'seq') ? "순서대로 입력하세요" : "정답을 입력하세요";
+                container.innerHTML = `<div style="text-align:center; width:200%; font-size:1.5rem; color:#888; margin-top:20px;">${guide}</div>`;
             }
 
-            db.ref('gameStatus').set({ state: 'play', type: q.type });
+            // ★ DB 전송: 이제 clientType으로 보냄 (seq 호환됨)
+            db.ref('gameStatus').set({ state: 'play', type: clientType });
             db.ref('answers').remove();
-
             questionStartTime = Date.now();
             startTimer(currentTimeLimit);
         }
 
-        function startTimer(seconds) {
+        function startTimer(sec) {
             clearInterval(timerInterval);
-            let timeLeft = seconds;
-            document.getElementById('time-left').innerText = timeLeft;
+            let left = sec;
+            document.getElementById('time-left').innerText = left;
             document.getElementById('timer-bar').style.width = '100%';
-            document.getElementById('timer-bar').style.transition = 'none';
-            setTimeout(() => {
-                 document.getElementById('timer-bar').style.transition = `width ${seconds}s linear`;
-                 document.getElementById('timer-bar').style.width = '0%';
-            }, 50);
+            document.getElementById('timer-bar').style.transition = `width ${sec}s linear`;
+            setTimeout(() => document.getElementById('timer-bar').style.width = '0%', 50);
             timerInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById('time-left').innerText = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    checkAnswer(); 
-                }
+                left--; document.getElementById('time-left').innerText = left;
+                if(left <= 0) { clearInterval(timerInterval); checkAnswerAndShowRank(); }
             }, 1000);
         }
 
-        function manualCheck() {
-            if(!isAnswerChecked) {
-                clearInterval(timerInterval);
-                checkAnswer();
-            } else {
-                nextQuestion();
-            }
-        }
-
-        function checkAnswer() {
-            if (isAnswerChecked) return;
-            isAnswerChecked = true;
-            document.getElementById('next-btn').innerText = "다음 문제 >";
+        function checkAnswerAndShowRank() {
+            if(isRankShown) return; isRankShown = true;
+            const btn = document.getElementById('action-btn'); btn.innerText = "다음 문제 >"; btn.classList.add('btn-next');
             document.getElementById('time-left').innerText = "STOP";
-            db.ref('gameStatus').set({ state: 'wait' });
-
+            
             const q = currentQuizList[currentQIndex];
+            
+            // ★ 핵심: client.html이 O/X를 띄우도록 result 상태와 정답을 보냄
+            db.ref('gameStatus').set({ state: 'result', answer: q.ans });
+
             const maxPoint = q.point ? parseInt(q.point) : 1000;
 
-            if(q.type !== 'input' && q.type !== 'order' && q.type !== '순서') {
+            if(q.type !== 'input' && q.type !== 'order' && q.type !== '순서' && q.type !== 'seq') {
                 const ansId = `opt-${q.ans}`;
                 if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
-            } else {
-                document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
-            }
+            } else document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
 
-            db.ref('answers').once('value', snapshot => {
-                const answers = snapshot.val();
-                if(!answers) {
-                    showLiveRank();
-                    return;
-                }
-                for (const playerId in answers) {
-                    const data = answers[playerId];
-                    const playerAns = data.answer;
-                    const playerTime = data.time || Date.now();
-                    let isCorrect = false;
-
-                    if(q.type === 'input' || q.type === 'order' || q.type === '순서') {
-                        if(playerAns && String(playerAns).replace(/\s/g, "") === String(q.ans).replace(/\s/g, "")) isCorrect = true;
-                    } else {
-                        if(String(playerAns) === String(q.ans)) isCorrect = true;
-                    }
-
-                    if(isCorrect) {
-                        const timeTaken = (playerTime - questionStartTime) / 1000;
-                        let scoreRatio = Math.max(0, (currentTimeLimit - timeTaken) / currentTimeLimit);
-                        let earnedPoint = Math.round((maxPoint * 0.5) + ((maxPoint * 0.5) * scoreRatio));
-                        db.ref(`players/${playerId}/score`).transaction(currentScore => (currentScore || 0) + earnedPoint);
-                    }
-                }
-                setTimeout(showLiveRank, 800); 
+            // 호스트 점수 집계 (총점 누적)
+            db.ref('answers').once('value', ansSnap => {
+                const answers = ansSnap.val();
+                db.ref('players').once('value', pSnap => {
+                    const updates = {};
+                    pSnap.forEach(p => {
+                        const pid = p.key, pData = p.val();
+                        let score = pData.score || 0, isCorrect = false, earned = 0;
+                        if(answers && answers[pid]) {
+                            const ans = answers[pid];
+                            // 순서, 주관식, seq는 공백제거 비교
+                            if(['input','order','순서','seq'].includes(q.type) || q.type === 'text') {
+                                if(ans.answer && String(ans.answer).replace(/\s/g,"") === String(q.ans).replace(/\s/g,"")) isCorrect = true;
+                            } else if(String(ans.answer) === String(q.ans)) isCorrect = true;
+                            
+                            if(isCorrect) {
+                                const ratio = Math.max(0, (currentTimeLimit - (ans.time - questionStartTime)/1000) / currentTimeLimit);
+                                earned = Math.round((maxPoint*0.5) + (maxPoint*0.5)*ratio);
+                                score += earned;
+                            }
+                        }
+                        updates[`players/${pid}/score`] = score;
+                    });
+                    db.ref().update(updates).then(() => setTimeout(displayRankBox, 500));
+                });
             });
         }
 
-        function showLiveRank() {
-            db.ref('players').orderByChild('score').limitToLast(5).once('value', snapshot => {
-                const list = [];
-                snapshot.forEach(child => list.push(child.val()));
-                list.reverse();
-                const rankList = document.getElementById('live-rank-list');
-                rankList.innerHTML = "";
-                if (list.length === 0) {
-                    rankList.innerHTML = "<div style='padding:10px; color:#888;'>득점자 없음</div>";
-                } else {
-                    list.forEach((p, idx) => {
-                        rankList.innerHTML += `
-                            <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; font-size:1.2rem;">
-                                <span>${idx+1}. ${p.name}</span>
-                                <span style="font-weight:bold;">${p.score || 0}점</span>
-                            </div>`;
-                    });
-                }
+        function displayRankBox() {
+            db.ref('players').orderByChild('score').limitToLast(5).once('value', snap => {
+                const list = []; snap.forEach(c => list.push(c.val())); list.reverse();
+                const rankList = document.getElementById('live-rank-list'); rankList.innerHTML = "";
+                if(list.length === 0) rankList.innerHTML = "<div style='padding:10px;'>득점자 없음</div>";
+                else list.forEach((p, i) => rankList.innerHTML += `<div class="rank-row"><span>${i+1}. ${p.name}</span><span>${p.score||0}점</span></div>`);
                 document.getElementById('live-rank-box').style.display = 'block';
                 document.getElementById('opt-container').style.display = 'none';
             });
@@ -439,23 +302,26 @@ measurementId: "G-8GL8G5NCQF"
 
         function finishGame() {
             showScreen('result-screen');
-            db.ref('players').orderByChild('score').limitToLast(10).once('value', snapshot => {
-                const list = [];
-                snapshot.forEach(child => list.push(child.val()));
-                list.reverse(); 
-                const board = document.getElementById('rank-board');
-                board.innerHTML = "";
-                list.forEach((p, idx) => {
-                    let medal = idx < 3 ? ['🥇','🥈','🥉'][idx] : `${idx+1}위`;
-                    let style = idx === 0 ? 'color:#D4AF37; font-weight:bold; font-size:1.5em;' : '';
-                    board.innerHTML += `
-                        <div style="padding:15px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; font-size:1.3rem; ${style}">
-                            <span>${medal} ${p.name}</span>
-                            <span>${p.score || 0}점</span>
-                        </div>`;
+            db.ref('players').orderByChild('score').limitToLast(10).once('value', snap => {
+                const list = []; snap.forEach(c => list.push(c.val())); list.reverse();
+                const board = document.getElementById('rank-board'); board.innerHTML = "";
+                list.forEach((p, i) => {
+                    let style = i===0 ? 'color:#D4AF37; font-weight:bold;' : '';
+                    board.innerHTML += `<div class="rank-row" style="${style}"><span>${i+1}위 ${p.name}</span><span>${p.score||0}점</span></div>`;
                 });
             });
         }
+
+        function resetScoresKeepPlayers() {
+            if(confirm("참가자 유지, 점수만 0점?")) {
+                db.ref('players').once('value', s => {
+                    if(s.exists()) { const u={}; s.forEach(c=>u[`players/${c.key}/score`]=0); db.ref().update(u); }
+                    db.ref('answers').remove(); alert("완료");
+                });
+            }
+        }
+        function resetAllData() { if(confirm("전체 삭제?")) { db.ref('players').remove(); db.ref('answers').remove(); alert("완료"); } }
+        function resetScoreAndMenu() { resetScoresKeepPlayers(); backToMenu(); }
     </script>
 </body>
 </html>
