@@ -39,11 +39,9 @@
         .opt.reveal { opacity: 1; border: 5px solid var(--gb-gold); transform: scale(1.05); box-shadow: 0 0 20px var(--gb-gold); }
         .opt-1 { background: #E74C3C; } .opt-2 { background: #3498DB; } .opt-3 { background: #F1C40F; color: black; } .opt-4 { background: #2ECC71; }
 
-        /* 힌트 버튼 */
         .opt-hint { background: var(--gb-purple); border: 3px solid var(--gb-gold); color: white; font-size: 1.5rem; border-radius: 15px; cursor: pointer; transition: 0.2s; font-weight: bold; padding: 20px; }
         .opt-hint:hover { background: #4a2d4a; transform: scale(1.05); }
         
-        /* 힌트 텍스트 영역 */
         .hint-text-area { margin-top: 20px; font-size: 1.8rem; color: #E67E22; font-weight: bold; background: #fff3e0; padding: 15px; border-radius: 10px; width: 90%; display: none; animation: fadeIn 0.5s; border: 2px dashed #E67E22; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -58,6 +56,8 @@
         .rank-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 1.3rem; }
         .rank-row:first-child { color: #D4AF37; font-weight: bold; font-size: 1.5rem; }
         .link-text { font-size: 0.8rem; color: #666; margin-top: 5px; word-break: break-all; max-width: 300px; }
+        
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; display: flex; justify-content: center; align-items: center; font-size: 2rem; z-index: 9999; flex-direction: column; }
     </style>
 </head>
 <body>
@@ -105,7 +105,6 @@
                 <img id="q-image" src="" style="max-width:100%; max-height:300px; display:none; margin-bottom:15px; border-radius:10px;">
                 <span id="q-text" style="white-space: pre-wrap;">문제 로딩중...</span>
                 
-                <!-- 힌트 텍스트 영역 -->
                 <div id="hint-display" class="hint-text-area"></div>
 
                 <div class="time-badge" id="time-left">0</div>
@@ -165,6 +164,7 @@
                 allQuizData = data;
                 document.getElementById('status-text').innerText = "✅ 준비 완료";
                 document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('loading'));
+                document.getElementById('loading-overlay').style.display = 'none';
                 db.ref('gameStatus').set({ state: 'lobby' }); 
             }).catch(err => { 
                 document.getElementById('status-text').innerText = "❌ 로딩 실패";
@@ -217,14 +217,12 @@
             else nextQuestion();
         }
 
-        // ★ 텍스트 힌트 보여주기 (설명 퀴즈용)
         function showHint(text) {
             const display = document.getElementById('hint-display');
             display.innerText = text;
             display.style.display = 'block';
         }
 
-        // ★ 이미지 힌트 보여주기 (이미지 확대 퀴즈용)
         function changeImage(url) {
             const imgEl = document.getElementById('q-image');
             imgEl.src = url;
@@ -259,7 +257,6 @@
             if(q.type === '순서' || q.type === 'order') clientType = 'seq';
             if(q.type === '주관식') clientType = 'input';
 
-            // ★ 힌트 퀴즈 로직 (이미지 교체 vs 텍스트 출력 구분)
             const cat = (q.category||'').toLowerCase();
             const isImageQuiz = ['이미지', 'image', 'zoom', '확대'].some(k => cat.includes(k));
             const isDescQuiz = ['설명', 'desc', 'hint', '힌트'].some(k => cat.includes(k));
@@ -270,10 +267,8 @@
                     if (opt && String(opt).trim() !== "") {
                         const safeOpt = String(opt).replace(/"/g, '&quot;').replace(/'/g, "\\'");
                         if(isImageQuiz) {
-                            // 이미지 퀴즈 -> 이미지 교체
                             container.innerHTML += `<button class="opt-hint" onclick="changeImage('${safeOpt}')">🖼️ 힌트 ${idx+1}</button>`;
                         } else {
-                            // 설명 퀴즈 -> 텍스트 출력
                             container.innerHTML += `<button class="opt-hint" onclick="showHint('${safeOpt}')">💡 힌트 ${idx+1}</button>`;
                         }
                     }
@@ -318,7 +313,15 @@
 
             const maxPoint = q.point ? parseInt(q.point) : 1000;
 
-            // 힌트 퀴즈도 여기서 처리 (답 공개)
+            // ★ 정답 공개 시 이미지 퀴즈면 해설 이미지(원본)로 교체
+            const cat = (q.category||'').toLowerCase();
+            const isImageQuiz = ['이미지', 'image', 'zoom', '확대'].some(k => cat.includes(k));
+            
+            if (isImageQuiz && q.explanation && q.explanation.startsWith('http')) {
+                document.getElementById('q-image').src = q.explanation;
+                document.getElementById('q-image').style.display = 'block';
+            }
+
             if(q.type !== 'input' && q.type !== 'order' && q.type !== '순서' && q.type !== 'seq' && document.getElementsByClassName('opt-hint').length === 0) {
                 const ansId = `opt-${q.ans}`;
                 if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
@@ -333,7 +336,6 @@
                         let score = pData.score || 0, isCorrect = false, earned = 0;
                         if(answers && answers[pid]) {
                             const ans = answers[pid];
-                            // 힌트 퀴즈 포함 텍스트 비교
                             if(['input','order','순서','seq'].includes(q.type) || q.type === 'text' || document.getElementsByClassName('opt-hint').length > 0) {
                                 if(ans.answer && String(ans.answer).replace(/\s/g,"") === String(q.ans).replace(/\s/g,"")) isCorrect = true;
                             } else if(String(ans.answer) === String(q.ans)) isCorrect = true;
