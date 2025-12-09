@@ -56,6 +56,9 @@
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .rank-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 1.3rem; }
         .rank-row:first-child { color: #D4AF37; font-weight: bold; font-size: 1.5rem; }
+        
+        /* 링크 확인용 텍스트 */
+        .link-text { font-size: 0.8rem; color: #666; margin-top: 5px; word-break: break-all; max-width: 300px; }
     </style>
 </head>
 <body>
@@ -83,7 +86,12 @@
             <h1 id="lobby-title" style="font-size:2.5rem; margin-bottom:10px; color:var(--gb-purple);">Check-In</h1>
             <h3 id="lobby-subtitle" style="color:#666; margin-top:0;">대기중...</h3>
             <div class="lobby-container">
-                <div class="qr-section" id="qr-area"></div>
+                <div class="qr-section">
+                    <div id="qr-area"></div>
+                </div>
+                <!-- ★ 주소 확인용 텍스트 (참가자가 들어갈 주소) -->
+                <p class="link-text" id="client-link-display"></p>
+                
                 <p style="font-size:1.2rem;">QR코드를 스캔하여 입장하세요</p>
                 <div style="font-size:2rem; color:var(--gb-purple); font-weight:bold;">
                     현재 입장: <span id="p-count" style="color:var(--gb-red); font-size:3rem;">0</span>명
@@ -137,7 +145,7 @@
     </div>
 
     <script>
-        // 1. Firebase 설정
+        // 1. Firebase 설정 (본인 것 입력)
         const firebaseConfig = {
             apiKey: "여기에_API_KEY_입력",
             authDomain: "여기에_AUTH_DOMAIN_입력",
@@ -156,12 +164,21 @@
         let allQuizData = [];
         let currentQuizList = [];
         let currentQIndex = -1;
-        let isRankShown = false; // 순위가 보여지고 있는지 체크
+        let isRankShown = false; 
         let timerInterval = null;
         let questionStartTime = 0;
         let currentTimeLimit = 0;
 
-        const clientURL = window.location.href.replace('host.html', 'client.html');
+        // ★ QR코드 생성 로직 (현재 폴더 위치 기반으로 client.html 경로 생성)
+        // 이 코드는 현재 페이지를 이동시키지 않고, 문자열만 계산합니다.
+        let path = window.location.pathname;
+        let dir = path.substring(0, path.lastIndexOf('/')); 
+        // 만약 root면 dir이 빈 문자열일 수 있음
+        const clientURL = window.location.protocol + "//" + window.location.host + dir + "/client.html";
+        
+        // 화면에 주소 텍스트 표시 (확인용)
+        document.getElementById("client-link-display").innerText = clientURL;
+
         if(clientURL) {
             new QRCode(document.getElementById("qr-area"), { text: clientURL, width: 200, height: 200 });
         }
@@ -322,7 +339,6 @@
             db.ref('answers').once('value', snapshot => {
                 const answers = snapshot.val();
                 
-                // 참가자 전체 리스트를 한 번 불러와서 업데이트 (없으면 안됨)
                 db.ref('players').once('value', pSnap => {
                     const updates = {};
                     
@@ -333,7 +349,6 @@
                         let isCorrect = false;
                         let earned = 0;
 
-                        // 답안이 있는 경우 채점
                         if(answers && answers[pid]) {
                             const ansData = answers[pid];
                             const playerAns = ansData.answer;
@@ -353,7 +368,6 @@
                             }
                         }
 
-                        // ★ 핵심: 점수 업데이트 + 개인 결과(O/X, 점수) 전송
                         updates[`players/${pid}/score`] = currentScore;
                         updates[`players/${pid}/lastResult`] = {
                             isCorrect: isCorrect,
@@ -362,9 +376,7 @@
                         };
                     });
 
-                    // DB 업데이트 실행
                     db.ref().update(updates).then(() => {
-                        // 업데이트 완료 후 순위표 표시 (약간 딜레이)
                         setTimeout(displayRankBox, 500);
                     });
                 });
@@ -385,8 +397,7 @@
                         rankList.innerHTML += `<div class="rank-row"><span>${idx+1}. ${p.name}</span><span>${p.score||0}점</span></div>`;
                     });
                 }
-                document.getElementById('live-rank-box').style.display = 'block'; // 순위박스 등장
-                // 보기는 숨기기 (깔끔하게)
+                document.getElementById('live-rank-box').style.display = 'block'; 
                 document.getElementById('opt-container').style.display = 'none';
             });
         }
