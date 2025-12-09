@@ -144,20 +144,21 @@
 
     <script>
         // 1. Firebase 설정 (본인 설정 필수)
-        const firebaseConfig = {
-            apiKey: "여기에_API_KEY_입력",
-            authDomain: "여기에_AUTH_DOMAIN_입력",
-            databaseURL: "여기에_DATABASE_URL_입력",
-            projectId: "여기에_PROJECT_ID_입력",
-            storageBucket: "...",
-            messagingSenderId: "...",
-            appId: "..."
-        };
+const firebaseConfig = {
+apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks",
+authDomain: "thegranddvegala.firebaseapp.com",
+databaseURL: "https://thegranddvegala-default-rtdb.firebaseio.com",
+projectId: "thegranddvegala",
+storageBucket: "thegranddvegala.firebasestorage.app",
+messagingSenderId: "980091305368",
+appId: "1:980091305368:web:e247f9be81e6786888bfed",
+measurementId: "G-8GL8G5NCQF"
+};
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         // 2. 구글 시트 웹앱 URL (아까 배포한 스크립트 URL)
-        const SHEET_URL = "여기에_구글스크립트_URL_입력";
+        const SHEET_URL = "https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec";
 
         let allQuizData = [];
         let currentQuizList = [];
@@ -423,3 +424,4 @@
     </script>
 </body>
 </html>
+
