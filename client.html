@@ -1,244 +1,333 @@
 <!DOCTYPE html>
+
 <html lang="ko">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Grand Quiz - Client</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <title>Grand Controller</title>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
+
     <style>
-        :root { --gb-pink: #F7CAC9; --gb-purple: #5D3A5D; --gb-gold: #D4AF37; }
-        body { background-color: var(--gb-pink); color: var(--gb-purple); font-family: 'GmarketSansMedium', sans-serif; margin: 0; padding: 20px; text-align: center; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-        
-        .screen { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: center; align-items: center; }
-        .active { display: flex; }
 
-        h1, h2 { margin: 10px 0; }
-        
-        input { padding: 15px; font-size: 1.5rem; border-radius: 15px; border: 3px solid var(--gb-purple); width: 80%; text-align: center; margin-bottom: 20px; outline: none; }
-        .btn { padding: 15px 30px; background: var(--gb-purple); color: white; border: none; font-size: 1.5rem; border-radius: 50px; cursor: pointer; width: 80%; max-width: 300px; margin-bottom: 10px; font-weight: bold; box-shadow: 0 5px 0 #3e263e; transition: 0.1s; }
-        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #3e263e; }
+        :root { --gb-pink: #F7CAC9; --gb-purple: #5D3A5D; }
 
-        /* 선택지 그리드 */
-        .grid-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; height: 60%; max-height: 500px; }
-        .opt-btn { width: 100%; height: 100%; font-size: 3rem; border-radius: 20px; border: 4px solid rgba(0,0,0,0.1); color: white; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
-        .opt-btn:active { transform: scale(0.95); }
+        body { background: var(--gb-purple); color: white; margin: 0; font-family: sans-serif; text-align: center; height: 100vh; overflow: hidden; }
+
+        .score-board { position: absolute; top: 10px; left: 15px; font-size: 1.2rem; font-weight: bold; color: var(--gb-pink); z-index: 10; }
+
+        #login-screen { padding-top: 30vh; }
+
+        input { padding: 15px; border-radius: 5px; border: none; font-size: 1.2rem; width: 70%; text-align: center; }
+
+        .btn-enter { background: var(--gb-pink); color: var(--gb-purple); padding: 15px 30px; border: none; margin-top: 20px; font-weight: bold; border-radius: 50px; font-size: 1.2rem; cursor: pointer; }
+
+        #wait-screen { display: none; padding-top: 40vh; font-size: 1.5rem; color: var(--gb-pink); }
+
+        #controller-screen { display: none; height: 100vh; flex-direction: column; }
+
+        .grid-btn { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 100%; gap: 5px; padding: 5px; margin-top: 50px; }
+
+        .c-btn { border: none; font-size: 3rem; color: white; border-radius: 10px; transition: 0.1s; }
+
+        .c-btn:active { transform: scale(0.95); opacity: 0.8; }
+
+        .c-1 { background: #E74C3C; } .c-2 { background: #3498DB; } .c-3 { background: #F1C40F; color: black; } .c-4 { background: #2ECC71; }
+
+        .input-area { display: none; padding-top: 30vh; }
+
         
-        /* 결과 팝업 (정답/오답) */
-        .result-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: white; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999; animation: popIn 0.3s; }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        .result-icon { font-size: 8rem; margin-bottom: 20px; }
-        .score-box { background: rgba(255,255,255,0.2); padding: 15px 30px; border-radius: 15px; margin-top: 20px; text-align: center; }
+
+        /* 순서 맞추기 */
+
+        .seq-area { display: none; flex-direction: column; height: 100%; padding: 20px; box-sizing: border-box; }
+
+        .seq-display { background: rgba(255,255,255,0.1); border: 2px solid var(--gb-pink); color: #fff; padding: 15px; font-size: 1.5rem; border-radius: 10px; margin-top: 60px; min-height: 30px; }
+
+        .seq-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; flex: 1; }
+
+        .seq-btn { font-size: 2rem; border-radius: 10px; border: none; color: white; }
+
+        .seq-btn:disabled { opacity: 0.3; }
+
+        .action-btn { padding: 15px; font-size: 1.2rem; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; }
+
+
+
+        /* ★ 정답/오답 결과 화면 (New) */
+
+        #result-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; z-index: 100; flex-direction: column; justify-content: center; align-items: center; }
+
+        .res-icon { font-size: 5rem; margin-bottom: 20px; }
+
+        .res-text { font-size: 2.5rem; font-weight: bold; }
+
+        .res-score { font-size: 1.5rem; margin-top: 20px; }
+
     </style>
+
 </head>
+
 <body>
-    <!-- 1. 로그인 화면 -->
-    <div id="login-screen" class="screen active">
-        <h1 style="font-size:2.5rem; margin-bottom:10px;">🏨 The Grand Quiz</h1>
-        <p style="margin-bottom:30px; font-size:1.2rem;">이름을 입력하고 입장하세요</p>
-        <input type="text" id="username" placeholder="닉네임 (예: 제임스)" maxlength="8">
-        <button class="btn" onclick="joinGame()">입장하기</button>
-    </div>
 
-    <!-- 2. 대기 화면 -->
-    <div id="wait-screen" class="screen">
-        <div style="font-size:4rem; margin-bottom:20px;">⏳</div>
-        <h2 style="font-size:2rem;">잠시만 기다려주세요</h2>
-        <p>호스트가 게임을 진행 중입니다.</p>
-        <div id="my-name-display" style="margin-top:20px; font-weight:bold; color:var(--gb-gold); font-size:1.5rem;"></div>
-    </div>
+    <div class="score-board">MY SCORE: <span id="my-score">0</span></div>
 
-    <!-- 3. 문제 풀기 화면 -->
-    <div id="play-screen" class="screen">
-        <!-- 주관식/순서 -->
-        <div id="input-area" style="width:100%; display:none; flex-direction:column; align-items:center;">
-            <h2 id="input-guide" style="margin-bottom:20px;">정답을 입력하세요</h2>
-            <input type="text" id="answer-input" placeholder="정답 입력">
-            <button class="btn" onclick="submitAnswer()">제출하기</button>
-        </div>
-        
-        <!-- 4지선다 -->
-        <div id="choice-area" class="grid-options" style="display:none;">
-            <button class="opt-btn" style="background:#E74C3C" onclick="submitChoice(0)">▲</button>
-            <button class="opt-btn" style="background:#3498DB" onclick="submitChoice(1)">■</button>
-            <button class="opt-btn" style="background:#F1C40F; color:black;" onclick="submitChoice(2)">●</button>
-            <button class="opt-btn" style="background:#2ECC71" onclick="submitChoice(3)">◆</button>
+    <div id="login-screen"><h2 style="color:var(--gb-pink)">Room Key</h2><input type="text" id="nickname" placeholder="이름 입력"><br><button class="btn-enter" onclick="joinGame()">입장하기</button><p style="font-size:0.8rem;color:#aaa;margin-top:20px;">v3.2 Feedback Added</p></div>
+
+    <div id="wait-screen">🎩<br>잠시 대기해주세요...</div>
+
+
+
+    <div id="controller-screen">
+
+        <div id="type-choice" class="grid-btn">
+
+            <button class="c-btn c-1" onclick="sendAnswer(0)">▲</button><button class="c-btn c-2" onclick="sendAnswer(1)">■</button>
+
+            <button class="c-btn c-3" onclick="sendAnswer(2)">●</button><button class="c-btn c-4" onclick="sendAnswer(3)">◆</button>
+
         </div>
 
-        <!-- OX -->
-        <div id="ox-area" class="grid-options" style="display:none;">
-            <button class="opt-btn" style="background:#E74C3C" onclick="submitChoice('O')">O</button>
-            <button class="opt-btn" style="background:#3498DB" onclick="submitChoice('X')">X</button>
+        <div id="type-ox" class="grid-btn" style="display:none; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr;">
+
+            <button class="c-btn c-1" onclick="sendAnswer(0)">O</button><button class="c-btn c-2" onclick="sendAnswer(1)">X</button>
+
         </div>
-        
-        <!-- 제출 완료 메시지 -->
-        <div id="submitted-msg" style="display:none;">
-            <div style="font-size:4rem;">📨</div>
-            <h2 style="color:var(--gb-purple);">제출 완료!</h2>
-            <p>결과를 기다리는 중...</p>
+
+        <div id="type-input" class="input-area">
+
+            <input type="text" id="ans-text" placeholder="정답 입력"><button class="btn-enter" onclick="sendTextAnswer()">제출</button>
+
         </div>
+
+        <div id="type-seq" class="seq-area">
+
+            <div id="seq-result" class="seq-display">순서를 누르세요</div>
+
+            <div class="seq-controls">
+
+                <button class="seq-btn c-1" id="sb-1" onclick="clickSeq(1)">1</button><button class="seq-btn c-2" id="sb-2" onclick="clickSeq(2)">2</button>
+
+                <button class="seq-btn c-3" id="sb-3" onclick="clickSeq(3)">3</button><button class="seq-btn c-4" id="sb-4" onclick="clickSeq(4)">4</button>
+
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:10px;">
+
+                <button class="action-btn" style="background:#888; color:white; flex:1;" onclick="resetSeq()">다시</button>
+
+                <button class="action-btn" id="seq-submit" style="background:var(--gb-pink); color:var(--gb-purple); flex:2;" onclick="submitSeq()" disabled>제출</button>
+
+            </div>
+
+        </div>
+
     </div>
 
-    <!-- 4. 결과 오버레이 (정답/오답/점수) -->
-    <div id="result-overlay" class="result-popup">
-        <div id="res-icon" class="result-icon">⭕</div>
-        <h1 id="res-text" style="font-size:3rem; margin:0;">정답!</h1>
-        
-        <div class="score-box">
-            <div style="font-size:1rem; opacity:0.8;">획득 점수</div>
-            <div style="font-size:2.5rem; font-weight:bold; color:var(--gb-gold);">+<span id="res-earned">0</span></div>
-        </div>
-        
-        <div style="margin-top:20px; font-size:1.2rem;">
-            현재 총점: <span id="res-total" style="font-weight:bold;">0</span>점
-        </div>
+
+
+    <div id="result-overlay">
+
+        <div class="res-icon" id="res-icon"></div>
+
+        <div class="res-text" id="res-msg"></div>
+
+        <div class="res-score">현재 점수: <span id="res-score-val">0</span></div>
+
     </div>
+
+
 
     <script>
-        // ★ 호스트와 동일한 Firebase 설정 붙여넣기 필수!
-        const firebaseConfig = {
-            apiKey: "여기에_API_KEY_입력",
-            authDomain: "여기에_AUTH_DOMAIN_입력",
-            databaseURL: "여기에_DATABASE_URL_입력",
-            projectId: "여기에_PROJECT_ID_입력",
-            storageBucket: "...",
-            messagingSenderId: "...",
-            appId: "..."
-        };
-        // 설정이 비어있으면 경고
-        if (firebaseConfig.apiKey.includes("여기에")) {
-            alert("관리자에게 문의하세요 (Firebase 설정 미완료)");
-        } else {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const db = firebase.database();
 
-        let myId = localStorage.getItem('grand_quiz_uid');
-        if(!myId) {
-            myId = 'user_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('grand_quiz_uid', myId);
-        }
+        const firebaseConfig = { apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks", authDomain: "thegranddvegala.firebaseapp.com", databaseURL: "https://thegranddvegala-default-rtdb.firebaseio.com", projectId: "thegranddvegala", storageBucket: "thegranddvegala.firebasestorage.app", messagingSenderId: "980091305368", appId: "1:980091305368:web:e247f9be81e6786888bfed", measurementId: "G-8GL8G5NCQF" };
 
-        // 1. 게임 상태 감지 (로비 / 플레이 / 대기)
-        db.ref('gameStatus').on('value', snap => {
-            const status = snap.val();
-            if(!status) return; // 데이터 없으면 대기
+        firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-            // 로비 (대기실)
-            if(status.state === 'lobby') {
-                const savedName = localStorage.getItem('grand_quiz_name');
-                if(savedName) {
-                    showScreen('wait-screen');
-                    document.getElementById('my-name-display').innerText = `참가자: ${savedName}`;
-                } else {
-                    showScreen('login-screen');
-                }
-                document.getElementById('result-overlay').style.display = 'none'; // 결과창 끄기
-            } 
-            // 문제 풀기
-            else if(status.state === 'play') {
-                setupQuestion(status.type);
-                showScreen('play-screen');
-                document.getElementById('result-overlay').style.display = 'none'; // 새 문제 나오면 결과창 끄기
-            } 
-            // 정답 확인 중 (결과 화면은 별도 리스너로 뜸)
-            else if(status.state === 'wait') {
-                // 이미 제출했거나 시간이 끝났으면 대기 화면
-                if(document.getElementById('result-overlay').style.display === 'none') {
-                    showScreen('wait-screen');
-                }
-            }
-        });
+        
 
-        // 2. 내 점수/결과 감지 (호스트가 정답 누르면 뜸)
-        db.ref(`players/${myId}/lastResult`).on('value', snap => {
-            const res = snap.val();
-            // 호스트가 gameStatus를 wait로 바꿨을 때만 결과를 띄움
-            db.ref('gameStatus/state').once('value', sSnap => {
-                if(sSnap.val() === 'wait' && res) {
-                    showResultPopup(res);
-                }
-            });
-        });
+        let myName="", myId="", myLastAnswer=null;
 
-        function showResultPopup(res) {
-            const overlay = document.getElementById('result-overlay');
-            const icon = document.getElementById('res-icon');
-            const text = document.getElementById('res-text');
-            
-            if(res.isCorrect) {
-                icon.innerText = "⭕";
-                text.innerText = "정답!";
-                text.style.color = "#2ECC71";
-            } else {
-                icon.innerText = "❌";
-                text.innerText = "땡!";
-                text.style.color = "#E74C3C";
-            }
-            document.getElementById('res-earned').innerText = res.earned;
-            document.getElementById('res-total').innerText = res.total;
-            
-            overlay.style.display = 'flex';
-        }
+        try { myId=localStorage.getItem('myId')||Date.now().toString(); localStorage.setItem('myId',myId); } catch(e){ myId=Date.now().toString()+Math.random(); }
 
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
+
 
         function joinGame() {
-            const name = document.getElementById('username').value.trim();
-            if(!name) return alert("이름을 입력하세요");
-            
-            localStorage.setItem('grand_quiz_name', name);
-            
-            // 참가자 등록 (기존 점수 유지 위해 update 사용 권장)
-            db.ref(`players/${myId}`).update({ 
-                name: name,
-                // 점수는 초기화하지 않음 (재접속 시 유지)
+
+            myName = document.getElementById('nickname').value; if(!myName) return alert("이름을 입력해주세요.");
+
+            db.ref('players/'+myId).transaction(p=>{ if(p){p.name=myName;if(p.score===undefined)p.score=0;}else{return{name:myName,score:0};} return p; }, (e)=>{ if(!e) enterSuccess(); else alert("접속오류"); });
+
+        }
+
+
+
+        function enterSuccess() {
+
+            db.ref('players/'+myId+'/score').on('value', s=>{
+
+                const sc = s.val()||0;
+
+                document.getElementById('my-score').innerText=sc;
+
+                document.getElementById('res-score-val').innerText=sc;
+
             });
+
+            document.getElementById('login-screen').style.display='none'; document.getElementById('wait-screen').style.display='block';
+
             
-            showScreen('wait-screen');
-            document.getElementById('my-name-display').innerText = `참가자: ${name}`;
+
+            db.ref('gameStatus').on('value', s=>{ 
+
+                const st=s.val(); 
+
+                if(!st) return;
+
+
+
+                if(st.state==='play') {
+
+                    // 게임 시작: 컨트롤러 표시, 결과 화면 숨김
+
+                    myLastAnswer = null; // 입력값 초기화
+
+                    document.getElementById('result-overlay').style.display='none';
+
+                    showController(st.type);
+
+                } else if(st.state==='result') {
+
+                    // 결과 발표: 결과 화면 표시
+
+                    showResultFeedback(st.answer);
+
+                } else {
+
+                    // 대기 상태 (라운드 표지 등)
+
+                    showWait();
+
+                }
+
+            });
+
         }
 
-        function setupQuestion(type) {
-            document.getElementById('input-area').style.display = 'none';
-            document.getElementById('choice-area').style.display = 'none';
-            document.getElementById('ox-area').style.display = 'none';
-            document.getElementById('submitted-msg').style.display = 'none';
-            document.getElementById('answer-input').value = "";
 
-            if(type === 'choice') document.getElementById('choice-area').style.display = 'grid';
-            else if(type === 'ox') document.getElementById('ox-area').style.display = 'grid';
-            else {
-                document.getElementById('input-area').style.display = 'flex';
-                const guide = (type === 'order' || type === '순서') ? "순서대로 입력 (예: 1234)" : "정답을 입력하세요";
-                document.getElementById('input-guide').innerText = guide;
-                document.getElementById('answer-input').placeholder = "터치하여 입력";
+
+        function showResultFeedback(correctAnswer) {
+
+            document.getElementById('controller-screen').style.display='none';
+
+            document.getElementById('wait-screen').style.display='none';
+
+            const overlay = document.getElementById('result-overlay');
+
+            const icon = document.getElementById('res-icon');
+
+            const msg = document.getElementById('res-msg');
+
+            
+
+            // 정답 비교 로직
+
+            let isCorrect = false;
+
+            // null 체크 (답 안낸 경우)
+
+            if(myLastAnswer !== null) {
+
+                if(String(myLastAnswer).replace(/\s/g,"") === String(correctAnswer).replace(/\s/g,"")) {
+
+                    isCorrect = true;
+
+                }
+
             }
+
+
+
+            if(isCorrect) {
+
+                overlay.style.background = "#27ae60"; // 초록색
+
+                icon.innerText = "🎉";
+
+                msg.innerText = "정답입니다!";
+
+                if(navigator.vibrate) try{navigator.vibrate([100,50,100]);}catch(e){}
+
+            } else {
+
+                overlay.style.background = "#c0392b"; // 빨간색
+
+                icon.innerText = "❌";
+
+                msg.innerText = "틀렸습니다...";
+
+                if(navigator.vibrate) try{navigator.vibrate(200);}catch(e){}
+
+            }
+
+            overlay.style.display = 'flex';
+
         }
 
-        function submitChoice(val) {
-            db.ref(`answers/${myId}`).set({ answer: val, time: Date.now() });
-            showSubmitted();
+
+
+        function showController(type) {
+
+            document.getElementById('wait-screen').style.display='none'; document.getElementById('controller-screen').style.display='flex';
+
+            ['type-choice','type-ox','type-input','type-seq'].forEach(id=>document.getElementById(id).style.display='none');
+
+            if(type==='choice') document.getElementById('type-choice').style.display='grid';
+
+            else if(type==='ox') document.getElementById('type-ox').style.display='grid';
+
+            else if(type==='input') { document.getElementById('type-input').style.display='block'; document.getElementById('ans-text').value=""; }
+
+            else if(type==='seq') { document.getElementById('type-seq').style.display='flex'; resetSeq(); }
+
         }
 
-        function submitAnswer() {
-            const val = document.getElementById('answer-input').value.trim();
-            if(!val) return alert("답을 입력하세요");
-            db.ref(`answers/${myId}`).set({ answer: val, time: Date.now() });
-            showSubmitted();
+        function showWait() { document.getElementById('controller-screen').style.display='none'; document.getElementById('result-overlay').style.display='none'; document.getElementById('wait-screen').style.display='block'; }
+
+
+
+        function sendAnswer(val) { 
+
+            myLastAnswer = val; // 내가 낸 답 저장
+
+            if(navigator.vibrate) try{navigator.vibrate(50)}catch(e){}; 
+
+            db.ref('answers/'+myId).set({name:myName, answer:val, time:Date.now()}); 
+
+            showWait(); 
+
         }
 
-        function showSubmitted() {
-            document.getElementById('input-area').style.display = 'none';
-            document.getElementById('choice-area').style.display = 'none';
-            document.getElementById('ox-area').style.display = 'none';
-            document.getElementById('submitted-msg').style.display = 'block';
-        }
+        function sendTextAnswer() { const v=document.getElementById('ans-text').value; sendAnswer(v); }
+
+
+
+        let seqBuffer = [];
+
+        function clickSeq(num) { seqBuffer.push(num); document.getElementById('sb-'+num).disabled=true; document.getElementById('seq-result').innerText=seqBuffer.join(" > "); if(seqBuffer.length===4) document.getElementById('seq-submit').disabled=false; }
+
+        function resetSeq() { seqBuffer=[]; document.getElementById('seq-result').innerText="순서를 누르세요"; for(let i=1;i<=4;i++)document.getElementById('sb-'+i).disabled=false; document.getElementById('seq-submit').disabled=true; }
+
+        function submitSeq() { sendAnswer(seqBuffer.join("")); }
+
     </script>
+
 </body>
+
 </html>
