@@ -17,9 +17,15 @@
         .screen { display: none; width: 90%; max-width: 1000px; }
         .active { display: flex; flex-direction: column; align-items: center; }
 
+        /* 메뉴 버튼 스타일 */
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 80%; max-width: 800px; }
         .menu-btn { padding: 40px; background: var(--gb-purple); color: white; border: 4px solid var(--gb-gold); font-size: 1.8rem; cursor: pointer; border-radius: 20px; transition: 0.2s; font-weight: bold; box-shadow: 0 8px 0 #3e263e; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .menu-btn:hover { transform: translateY(-5px); filter: brightness(1.1); }
+        .menu-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #3e263e; }
+        
+        /* 로딩 중일 때 버튼 비활성화 스타일 */
+        .menu-btn.loading { opacity: 0.5; cursor: wait; filter: grayscale(100%); pointer-events: none; }
+
         .btn-main { background: #5D3A5D; } .btn-consonant { background: #8E44AD; }
         .btn-image { background: #2980B9; } .btn-desc { background: #27AE60; }
 
@@ -48,29 +54,30 @@
         .rank-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 1.3rem; }
         .rank-row:first-child { color: #D4AF37; font-weight: bold; font-size: 1.5rem; }
         .link-text { font-size: 0.8rem; color: #666; margin-top: 5px; word-break: break-all; max-width: 300px; }
-        
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; display: flex; justify-content: center; align-items: center; font-size: 2rem; z-index: 9999; flex-direction: column; }
     </style>
 </head>
 <body>
-    <div id="loading-overlay"><div>데이터 로딩 중...</div></div>
+    <!-- 로딩 오버레이 제거됨 (바로 화면 뜸) -->
 
     <div class="header">
         <span>🏨 The Grand Dev Gala</span>
-        <span id="status-text" style="font-size:1rem;">⏳ 준비중</span>
+        <span id="status-text" style="font-size:1rem; background:rgba(0,0,0,0.2); padding:5px 10px; border-radius:15px;">⏳ 로딩중...</span>
     </div>
 
     <div class="main">
+        <!-- 1. 메뉴 -->
         <div id="menu-screen" class="screen active">
             <h1 style="font-size:3rem; margin-bottom:40px;">Select Round</h1>
             <div class="menu-grid">
-                <div class="menu-btn btn-main" onclick="selectCategory('메인')"><span>🏨</span><span>메인 퀴즈</span></div>
-                <div class="menu-btn btn-consonant" onclick="selectCategory('자음')"><span>🔤</span><span>자음 퀴즈</span></div>
-                <div class="menu-btn btn-image" onclick="selectCategory('이미지')"><span>🔍</span><span>이미지 확대</span></div>
-                <div class="menu-btn btn-desc" onclick="selectCategory('설명')"><span>📢</span><span>설명 퀴즈</span></div>
+                <!-- 로딩 중일 땐 'loading' 클래스로 흐리게 처리 -->
+                <div class="menu-btn btn-main loading" onclick="selectCategory('메인')"><span>🏨</span><span>메인 퀴즈</span></div>
+                <div class="menu-btn btn-consonant loading" onclick="selectCategory('자음')"><span>🔤</span><span>자음 퀴즈</span></div>
+                <div class="menu-btn btn-image loading" onclick="selectCategory('이미지')"><span>🔍</span><span>이미지 확대</span></div>
+                <div class="menu-btn btn-desc loading" onclick="selectCategory('설명')"><span>📢</span><span>설명 퀴즈</span></div>
             </div>
         </div>
 
+        <!-- 2. 대기실 -->
         <div id="lobby-screen" class="screen">
             <h1 id="lobby-title" style="font-size:2.5rem; margin-bottom:10px; color:var(--gb-purple);">Check-In</h1>
             <h3 id="lobby-subtitle" style="color:#666; margin-top:0;">대기중...</h3>
@@ -90,6 +97,7 @@
             </div>
         </div>
 
+        <!-- 3. 게임 화면 -->
         <div id="game-screen" class="screen">
             <div class="timer-container"><div class="timer-bar" id="timer-bar"></div></div>
             <div class="round-tag" id="round-display">Round 1</div>
@@ -110,6 +118,7 @@
             <button class="game-btn" id="action-btn" onclick="handleAction()">정답 & 순위 확인</button>
         </div>
 
+        <!-- 4. 결과 화면 -->
         <div id="result-screen" class="screen">
             <h1 style="font-size:3rem; color:var(--gb-purple)">🏆 라운드 종료 🏆</h1>
             <div class="rank-list" id="rank-board" style="width:60%; margin:0 auto; background:#fff; padding:20px; border-radius:10px; border:3px solid var(--gb-gold); max-height:400px; overflow-y:auto;"></div>
@@ -121,52 +130,76 @@
     </div>
 
     <script>
-        // ★★★ Firebase 설정 (본인 것 입력 필수!) ★★★
-const firebaseConfig = {
-apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks",
-authDomain: "thegranddvegala.firebaseapp.com",
-databaseURL: "https://thegranddvegala-default-rtdb.firebaseio.com",
-projectId: "thegranddvegala",
-storageBucket: "thegranddvegala.firebasestorage.app",
-messagingSenderId: "980091305368",
-appId: "1:980091305368:web:e247f9be81e6786888bfed",
-measurementId: "G-8GL8G5NCQF"
-};
+        // ★★★ Firebase 설정 (적용됨) ★★★
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQcP8fknJ_ofom4Nu1-i39j7GLks0OYks",
+            authDomain: "thegranddvegala.firebaseapp.com",
+            databaseURL: "https://thegranddvegala-default-rtdb.firebaseio.com",
+            projectId: "thegranddvegala",
+            storageBucket: "thegranddvegala.firebasestorage.app",
+            messagingSenderId: "980091305368",
+            appId: "1:980091305368:web:e247f9be81e6786888bfed",
+            measurementId: "G-8GL8G5NCQF"
+        };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // ★★★ 구글 시트 URL 필수 ★★★
+        // ★★★ 구글 시트 URL (적용됨) ★★★
         const SHEET_URL = "https://script.google.com/macros/s/AKfycbxErU4lp6cRVaK56zFdbZuzD5IvyWfV4S8nyrTmOsjU0pNqR9bQzadoquSCroD8k2wnTg/exec";
 
         let allQuizData = [], currentQuizList = [], currentQIndex = -1;
         let isRankShown = false, timerInterval = null, questionStartTime = 0, currentTimeLimit = 0;
 
-        // ★ QR코드 생성 (client.html로 연결)
+        // ★ QR코드 생성
         let path = window.location.pathname;
         let dir = path.substring(0, path.lastIndexOf('/'));
         const clientURL = window.location.protocol + "//" + window.location.host + dir + "/client.html";
         document.getElementById("client-link-display").innerText = clientURL;
         new QRCode(document.getElementById("qr-area"), { text: clientURL, width: 200, height: 200 });
 
+        // ★ 데이터 로딩 (화면 차단 없이 진행)
         window.onload = function() {
             if(!SHEET_URL || SHEET_URL.includes("여기에")) { alert("설정 확인 필요"); return; }
+            
             fetch(SHEET_URL).then(res => res.json()).then(data => {
                 allQuizData = data;
                 document.getElementById('status-text').innerText = "✅ 준비 완료";
-                document.getElementById('loading-overlay').style.display = 'none';
-                // ★ 중요: 호스트가 켜지면 무조건 클라이언트를 대기 상태로 만듦
+                // 로딩 끝나면 버튼 활성화
+                document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('loading'));
                 db.ref('gameStatus').set({ state: 'lobby' }); 
-            }).catch(err => { alert("로딩 실패"); document.getElementById('loading-overlay').style.display = 'none'; });
+            }).catch(err => { 
+                document.getElementById('status-text').innerText = "❌ 로딩 실패";
+                alert("데이터 로딩 실패 (새로고침 해주세요)"); 
+            });
         };
 
         db.ref('players').on('value', snap => document.getElementById('p-count').innerText = snap.numChildren());
         db.ref('answers').on('value', snap => document.getElementById('ans-count').innerText = snap.numChildren());
 
         function selectCategory(keyword) {
-            if(allQuizData.length === 0) return alert("로딩중...");
-            const lower = keyword.toString().toLowerCase();
-            currentQuizList = allQuizData.filter(i => i.category && (i.category.toLowerCase().includes(lower) || (lower==='메인' && i.category.toLowerCase().includes('main'))));
-            if(currentQuizList.length === 0) return alert("해당 문제 없음");
+            if(allQuizData.length === 0) return alert("데이터를 불러오는 중입니다. 잠시만 기다려주세요!");
+
+            // ★ 똑똑한 카테고리 검색 (유사어 포함)
+            const aliases = {
+                '메인': ['main', '메인', '기본'],
+                '자음': ['consonant', '자음', '초성', 'initial', 'ㄱㄴㄷ'],
+                '이미지': ['image', '이미지', 'zoom', 'magnify', '확대'],
+                '설명': ['desc', '설명', 'description', 'hint', '힌트']
+            };
+            
+            const targets = aliases[keyword] || [keyword];
+            
+            currentQuizList = allQuizData.filter(item => {
+                const cat = String(item.category || "").toLowerCase();
+                // cat에 targets 중 하나라도 포함되어 있으면 통과
+                return targets.some(t => cat.includes(t));
+            });
+
+            if(currentQuizList.length === 0) {
+                // 디버깅용: 현재 로드된 카테고리들을 보여줌
+                const loadedCats = [...new Set(allQuizData.map(d => d.category))].join(", ");
+                return alert(`"${keyword}" 관련 문제를 찾을 수 없습니다.\n\n[현재 엑셀에서 읽어온 카테고리 목록]\n${loadedCats}\n\n(B열 '구분' 값이 위 목록에 있는지 확인해보세요)`);
+            }
             
             document.getElementById('lobby-title').innerText = `${keyword} 퀴즈`;
             document.getElementById('lobby-subtitle').innerText = `총 ${currentQuizList.length} 문제`;
@@ -211,12 +244,10 @@ measurementId: "G-8GL8G5NCQF"
             
             const container = document.getElementById('opt-container'); container.innerHTML = '';
             
-            // ★ 클라이언트가 'seq'를 알아먹도록 타입 변환 (순서/order -> seq)
             let clientType = q.type;
             if(q.type === '순서' || q.type === 'order') clientType = 'seq';
             if(q.type === '주관식') clientType = 'input';
 
-            // 호스트 화면 구성
             if(q.type === 'choice') q.options.forEach((o,i) => container.innerHTML += `<div class="opt opt-${i+1}" id="opt-${i}">${['▲','■','●','◆'][i]} ${o}</div>`);
             else if(q.type === 'ox') container.innerHTML = `<div class="opt opt-1" id="opt-0" style="background:#E74C3C">O</div><div class="opt opt-2" id="opt-1" style="background:#3498DB">X</div>`;
             else {
@@ -225,7 +256,6 @@ measurementId: "G-8GL8G5NCQF"
                 container.innerHTML = `<div style="text-align:center; width:200%; font-size:1.5rem; color:#888; margin-top:20px;">${guide}</div>`;
             }
 
-            // ★ DB 전송: 이제 clientType으로 보냄 (seq 호환됨)
             db.ref('gameStatus').set({ state: 'play', type: clientType });
             db.ref('answers').remove();
             questionStartTime = Date.now();
@@ -251,8 +281,6 @@ measurementId: "G-8GL8G5NCQF"
             document.getElementById('time-left').innerText = "STOP";
             
             const q = currentQuizList[currentQIndex];
-            
-            // ★ 핵심: client.html이 O/X를 띄우도록 result 상태와 정답을 보냄
             db.ref('gameStatus').set({ state: 'result', answer: q.ans });
 
             const maxPoint = q.point ? parseInt(q.point) : 1000;
@@ -262,7 +290,6 @@ measurementId: "G-8GL8G5NCQF"
                 if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
             } else document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
 
-            // 호스트 점수 집계 (총점 누적)
             db.ref('answers').once('value', ansSnap => {
                 const answers = ansSnap.val();
                 db.ref('players').once('value', pSnap => {
@@ -272,7 +299,6 @@ measurementId: "G-8GL8G5NCQF"
                         let score = pData.score || 0, isCorrect = false, earned = 0;
                         if(answers && answers[pid]) {
                             const ans = answers[pid];
-                            // 순서, 주관식, seq는 공백제거 비교
                             if(['input','order','순서','seq'].includes(q.type) || q.type === 'text') {
                                 if(ans.answer && String(ans.answer).replace(/\s/g,"") === String(q.ans).replace(/\s/g,"")) isCorrect = true;
                             } else if(String(ans.answer) === String(q.ans)) isCorrect = true;
@@ -284,6 +310,7 @@ measurementId: "G-8GL8G5NCQF"
                             }
                         }
                         updates[`players/${pid}/score`] = score;
+                        updates[`players/${pid}/lastResult`] = { isCorrect: isCorrect, earned: earned, total: score };
                     });
                     db.ref().update(updates).then(() => setTimeout(displayRankBox, 500));
                 });
@@ -326,4 +353,3 @@ measurementId: "G-8GL8G5NCQF"
     </script>
 </body>
 </html>
-
