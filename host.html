@@ -130,9 +130,9 @@
         <div id="result-screen" class="screen">
             <h1 id="result-title" style="font-size:3rem; color:var(--gb-purple)">🏆 라운드 종료 🏆</h1>
             <div class="rank-list" id="rank-board" style="width:60%; margin:0 auto; background:#fff; padding:20px; border-radius:10px; border:3px solid var(--gb-gold); max-height:400px; overflow-y:auto;"></div>
-            
             <div id="result-actions" style="margin-top:30px; display:flex; gap:20px; justify-content:center;">
-                <!-- 동적으로 버튼이 채워집니다 -->
+                <button class="game-btn" onclick="startNextRound()" style="background:#E67E22; padding:20px 40px;">다음 라운드</button>
+                <button class="game-btn" onclick="resetAllAndMenu()" style="background:var(--gb-red); padding:20px 40px;">메인 메뉴로</button>
             </div>
         </div>
     </div>
@@ -219,15 +219,12 @@
         function handleAction() {
             if(!isRankShown) { clearInterval(timerInterval); checkAnswerAndShowRank(); }
             else {
-                // ★ 여기서 라운드 변경 체크
                 const currentQ = currentQuizList[currentQIndex];
-                const nextQ = currentQuizList[currentQIndex + 1]; // 다음 문제 미리보기
-
-                // 다음 문제가 있고, 현재 라운드가 존재하며, 다음 라운드와 다르다면 -> 라운드 종료 처리
+                const nextQ = currentQuizList[currentQIndex + 1];
                 if (nextQ && currentQ.round && String(currentQ.round).trim() !== "" && String(currentQ.round) !== String(nextQ.round)) {
-                    showRoundResult(currentQ.round); // 라운드 결과 화면 보여주기
+                    showRoundResult(currentQ.round);
                 } else {
-                    nextQuestion(); // 아니면 그냥 다음 문제로
+                    nextQuestion();
                 }
             }
         }
@@ -318,21 +315,22 @@
             }, 1000);
         }
 
+        // ★★★ 만능 채점 & 점수 지급 로직 (수정됨) ★★★
         function checkAnswerAndShowRank() {
             if(isRankShown) return; isRankShown = true;
             
-            // 버튼 텍스트 변경
-            const btn = document.getElementById('action-btn'); 
-            
-            // 다음 문제가 다른 라운드면 "라운드 종료" 표시
             const currentQ = currentQuizList[currentQIndex];
             const nextQ = currentQuizList[currentQIndex + 1];
+            const btn = document.getElementById('action-btn'); 
+            
             if (nextQ && currentQ.round && String(currentQ.round).trim() !== "" && String(currentQ.round) !== String(nextQ.round)) {
                 btn.innerText = "라운드 종료 및 결과 보기 >";
-                btn.style.background = "#E67E22"; // 주황색 강조
+                btn.style.background = "#E67E22";
+                btn.classList.remove('btn-next');
             } else {
                 btn.innerText = "다음 문제 >";
                 btn.classList.add('btn-next');
+                btn.style.background = "#2ECC71"; 
             }
 
             document.getElementById('time-left').innerText = "STOP";
@@ -342,6 +340,7 @@
 
             const maxPoint = q.point ? parseInt(q.point) : 1000;
 
+            // 정답 해설 이미지/텍스트 표시
             const cat = (q.category||'').toLowerCase();
             const isImageQuiz = ['이미지', 'image', 'zoom', '확대'].some(k => cat.includes(k));
             
@@ -355,50 +354,86 @@
                 if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
             } else document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
 
+            // ★ 채점 로직 강화
             db.ref('answers').once('value', ansSnap => {
-                const answers = ansSnap.val();
+                const answers = ansSnap.val() || {}; // 없으면 빈 객체
                 db.ref('players').once('value', pSnap => {
+                    const players = pSnap.val();
+                    if (!players) {
+                        displayRankBox(); // 참가자 없으면 바로 랭킹(빈화면)
+                        return;
+                    }
+
                     const updates = {};
-                    pSnap.forEach(p => {
-                        const pid = p.key, pData = p.val();
-                        let score = pData.score || 0, isCorrect = false, earned = 0;
-                        if(answers && answers[pid]) {
+                    
+                    Object.keys(players).forEach(pid => {
+                        const pData = players[pid];
+                        let currentScore = pData.score || 0;
+                        let isCorrect = false;
+                        let earned = 0;
+
+                        if(answers[pid]) {
                             const ans = answers[pid];
-                            if(['input','order','순서','seq'].includes(q.type) || q.type === 'text' || document.getElementsByClassName('opt-hint').length > 0) {
-                                if(ans.answer && String(ans.answer).replace(/\s/g,"") === String(q.ans).replace(/\s/g,"")) isCorrect = true;
-                            } else if(String(ans.answer) === String(q.ans)) isCorrect = true;
+                            // 클라이언트가 보낸 값과 정답 값을 모두 문자열로 변환하고, 공백 제거 후 비교 (만능 비교)
+                            // ans.answer가 0일 때도 처리하기 위해 String() 사용
+                            const pAns = (ans.answer !== undefined && ans.answer !== null) ? String(ans.answer) : "";
+                            const qAns = String(q.ans);
+                            
+                            // 대소문자 무시, 공백 무시 비교
+                            if (pAns.replace(/\s/g, "").toLowerCase() === qAns.replace(/\s/g, "").toLowerCase()) {
+                                isCorrect = true;
+                            }
                             
                             if(isCorrect) {
-                                const ratio = Math.max(0, (currentTimeLimit - (ans.time - questionStartTime)/1000) / currentTimeLimit);
-                                earned = Math.round((maxPoint*0.5) + (maxPoint*0.5)*ratio);
-                                score += earned;
+                                const timeTaken = (ans.time - questionStartTime) / 1000;
+                                const ratio = Math.max(0, (currentTimeLimit - timeTaken) / currentTimeLimit);
+                                earned = Math.round((maxPoint * 0.5) + ((maxPoint * 0.5) * ratio));
+                                
+                                // ★ 안전장치: 맞췄는데 0점이 되지 않도록 기본 점수 보장 (최소 10점)
+                                if (earned < 10) earned = 10;
+                                
+                                currentScore += earned;
                             }
                         }
-                        updates[`players/${pid}/score`] = score;
-                        updates[`players/${pid}/lastResult`] = { isCorrect: isCorrect, earned: earned, total: score };
+                        
+                        // 디버깅용 로그 (F12 콘솔에서 확인 가능)
+                        console.log(`Player ${pData.name}: Answer=${answers[pid]?.answer}, Correct=${isCorrect}, Earned=${earned}`);
+
+                        updates[`players/${pid}/score`] = currentScore;
+                        updates[`players/${pid}/lastResult`] = { isCorrect: isCorrect, earned: earned, total: currentScore };
                     });
-                    db.ref().update(updates).then(() => setTimeout(displayRankBox, 500));
+
+                    // DB 업데이트 후 랭킹 표시
+                    if (Object.keys(updates).length > 0) {
+                        db.ref().update(updates).then(() => setTimeout(displayRankBox, 500));
+                    } else {
+                        displayRankBox();
+                    }
                 });
             });
         }
 
         function displayRankBox() {
             db.ref('players').orderByChild('score').limitToLast(5).once('value', snap => {
-                const list = []; snap.forEach(c => list.push(c.val())); list.reverse();
-                const rankList = document.getElementById('live-rank-list'); rankList.innerHTML = "";
+                const list = []; 
+                snap.forEach(c => list.push(c.val())); 
+                list.reverse();
+                
+                const rankList = document.getElementById('live-rank-list'); 
+                rankList.innerHTML = "";
+                
                 if(list.length === 0) rankList.innerHTML = "<div style='padding:10px;'>득점자 없음</div>";
                 else list.forEach((p, i) => rankList.innerHTML += `<div class="rank-row"><span>${i+1}. ${p.name}</span><span>${p.score||0}점</span></div>`);
+                
                 document.getElementById('live-rank-box').style.display = 'block';
                 document.getElementById('opt-container').style.display = 'none';
             });
         }
 
-        // ★ 라운드 중간 결과 화면 (중요)
         function showRoundResult(roundName) {
             showScreen('result-screen');
             document.getElementById('result-title').innerText = `${roundName} 종료!`;
             
-            // 랭킹 보여주기
             db.ref('players').orderByChild('score').limitToLast(10).once('value', snapshot => {
                 const list = []; snapshot.forEach(child => list.push(child.val())); list.reverse();
                 const board = document.getElementById('rank-board'); board.innerHTML = "";
@@ -408,7 +443,6 @@
                 });
             });
 
-            // 버튼: 다음 라운드 진행 (점수만 리셋)
             const actions = document.getElementById('result-actions');
             actions.innerHTML = `
                 <button class="game-btn" onclick="startNextRound()" style="background:#E67E22; padding:20px 40px; font-size:1.5rem;">
@@ -417,7 +451,6 @@
             `;
         }
 
-        // ★ 진짜 게임 끝 (모든 문제 종료)
         function finishGame() {
             showScreen('result-screen');
             document.getElementById('result-title').innerText = "🏆 최종 결과 🏆";
@@ -431,7 +464,6 @@
                 });
             });
 
-            // 버튼: 메인 메뉴로 (완전 종료)
             const actions = document.getElementById('result-actions');
             actions.innerHTML = `
                 <button class="game-btn" onclick="resetAllAndMenu()" style="background:var(--gb-red); padding:20px 40px;">
@@ -440,7 +472,6 @@
             `;
         }
 
-        // ★ 다음 라운드 시작 로직 (점수 리셋 -> 다음 문제)
         function startNextRound() {
             if(confirm("점수를 초기화하고 다음 라운드를 시작합니다.")) {
                 db.ref('players').once('value', snap => {
@@ -448,7 +479,6 @@
                         const updates = {};
                         snap.forEach(c => updates[`players/${c.key}/score`] = 0);
                         db.ref().update(updates).then(() => {
-                            // 점수 리셋 완료 후 바로 게임 화면으로 이동 및 다음 문제 시작
                             showScreen('game-screen');
                             nextQuestion();
                         });
@@ -463,7 +493,6 @@
 
         function backToMenu() { showScreen('menu-screen'); db.ref('gameStatus').set({ state: 'lobby' }); }
         
-        // 대기실용 리셋 함수들
         function resetScoresKeepPlayers() {
             if(confirm("참가자는 유지하고 점수만 0점으로?")) {
                 db.ref('players').once('value', s => {
@@ -474,7 +503,6 @@
         }
         function resetAllData() { if(confirm("전체 삭제?")) { db.ref('players').remove(); db.ref('answers').remove(); alert("완료"); } }
         
-        // 메인 메뉴로 갈 때 (전체 초기화)
         function resetAllAndMenu() {
             if(confirm("모든 데이터를 삭제하고 메인 메뉴로 돌아갑니다.")) {
                 db.ref('players').remove();
