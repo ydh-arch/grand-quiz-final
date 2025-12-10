@@ -315,7 +315,6 @@
             }, 1000);
         }
 
-        // ★★★ 만능 채점 & 점수 지급 로직 (수정됨) ★★★
         function checkAnswerAndShowRank() {
             if(isRankShown) return; isRankShown = true;
             
@@ -340,7 +339,6 @@
 
             const maxPoint = q.point ? parseInt(q.point) : 1000;
 
-            // 정답 해설 이미지/텍스트 표시
             const cat = (q.category||'').toLowerCase();
             const isImageQuiz = ['이미지', 'image', 'zoom', '확대'].some(k => cat.includes(k));
             
@@ -354,13 +352,13 @@
                 if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
             } else document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
 
-            // ★ 채점 로직 강화
+            // ★ 채점 및 점수 업데이트
             db.ref('answers').once('value', ansSnap => {
-                const answers = ansSnap.val() || {}; // 없으면 빈 객체
+                const answers = ansSnap.val() || {}; 
                 db.ref('players').once('value', pSnap => {
                     const players = pSnap.val();
                     if (!players) {
-                        displayRankBox(); // 참가자 없으면 바로 랭킹(빈화면)
+                        displayRankBox(); 
                         return;
                     }
 
@@ -374,12 +372,9 @@
 
                         if(answers[pid]) {
                             const ans = answers[pid];
-                            // 클라이언트가 보낸 값과 정답 값을 모두 문자열로 변환하고, 공백 제거 후 비교 (만능 비교)
-                            // ans.answer가 0일 때도 처리하기 위해 String() 사용
                             const pAns = (ans.answer !== undefined && ans.answer !== null) ? String(ans.answer) : "";
                             const qAns = String(q.ans);
                             
-                            // 대소문자 무시, 공백 무시 비교
                             if (pAns.replace(/\s/g, "").toLowerCase() === qAns.replace(/\s/g, "").toLowerCase()) {
                                 isCorrect = true;
                             }
@@ -388,22 +383,15 @@
                                 const timeTaken = (ans.time - questionStartTime) / 1000;
                                 const ratio = Math.max(0, (currentTimeLimit - timeTaken) / currentTimeLimit);
                                 earned = Math.round((maxPoint * 0.5) + ((maxPoint * 0.5) * ratio));
-                                
-                                // ★ 안전장치: 맞췄는데 0점이 되지 않도록 기본 점수 보장 (최소 10점)
                                 if (earned < 10) earned = 10;
-                                
                                 currentScore += earned;
                             }
                         }
                         
-                        // 디버깅용 로그 (F12 콘솔에서 확인 가능)
-                        console.log(`Player ${pData.name}: Answer=${answers[pid]?.answer}, Correct=${isCorrect}, Earned=${earned}`);
-
                         updates[`players/${pid}/score`] = currentScore;
                         updates[`players/${pid}/lastResult`] = { isCorrect: isCorrect, earned: earned, total: currentScore };
                     });
 
-                    // DB 업데이트 후 랭킹 표시
                     if (Object.keys(updates).length > 0) {
                         db.ref().update(updates).then(() => setTimeout(displayRankBox, 500));
                     } else {
@@ -413,17 +401,30 @@
             });
         }
 
+        // ★ 순위표 표시 (클라이언트 정렬 방식 - 누락 방지) ★
         function displayRankBox() {
-            db.ref('players').orderByChild('score').limitToLast(5).once('value', snap => {
-                const list = []; 
-                snap.forEach(c => list.push(c.val())); 
-                list.reverse();
+            db.ref('players').once('value', snap => {
+                const players = [];
+                snap.forEach(child => {
+                    const p = child.val();
+                    if(p.name) players.push({ name: p.name, score: p.score || 0 });
+                });
+
+                // 점수 내림차순 정렬
+                players.sort((a, b) => b.score - a.score);
+                
+                // Top 5 자르기
+                const top5 = players.slice(0, 5);
                 
                 const rankList = document.getElementById('live-rank-list'); 
                 rankList.innerHTML = "";
                 
-                if(list.length === 0) rankList.innerHTML = "<div style='padding:10px;'>득점자 없음</div>";
-                else list.forEach((p, i) => rankList.innerHTML += `<div class="rank-row"><span>${i+1}. ${p.name}</span><span>${p.score||0}점</span></div>`);
+                if(top5.length === 0) rankList.innerHTML = "<div style='padding:10px;'>득점자 없음</div>";
+                else {
+                    top5.forEach((p, i) => {
+                        rankList.innerHTML += `<div class="rank-row"><span>${i+1}. ${p.name}</span><span>${p.score}점</span></div>`;
+                    });
+                }
                 
                 document.getElementById('live-rank-box').style.display = 'block';
                 document.getElementById('opt-container').style.display = 'none';
@@ -434,12 +435,21 @@
             showScreen('result-screen');
             document.getElementById('result-title').innerText = `${roundName} 종료!`;
             
-            db.ref('players').orderByChild('score').limitToLast(10).once('value', snapshot => {
-                const list = []; snapshot.forEach(child => list.push(child.val())); list.reverse();
-                const board = document.getElementById('rank-board'); board.innerHTML = "";
-                list.forEach((p, i) => {
+            // 라운드 결과에서도 안전한 정렬 사용
+            db.ref('players').once('value', snap => {
+                const players = [];
+                snap.forEach(child => {
+                    const p = child.val();
+                    if(p.name) players.push({ name: p.name, score: p.score || 0 });
+                });
+                players.sort((a, b) => b.score - a.score);
+                const top10 = players.slice(0, 10);
+
+                const board = document.getElementById('rank-board'); 
+                board.innerHTML = "";
+                top10.forEach((p, i) => {
                     let style = i===0 ? 'color:#D4AF37; font-weight:bold;' : '';
-                    board.innerHTML += `<div class="rank-row" style="${style}"><span>${i+1}위 ${p.name}</span><span>${p.score||0}점</span></div>`;
+                    board.innerHTML += `<div class="rank-row" style="${style}"><span>${i+1}위 ${p.name}</span><span>${p.score}점</span></div>`;
                 });
             });
 
@@ -455,12 +465,20 @@
             showScreen('result-screen');
             document.getElementById('result-title').innerText = "🏆 최종 결과 🏆";
             
-            db.ref('players').orderByChild('score').limitToLast(10).once('value', snapshot => {
-                const list = []; snapshot.forEach(child => list.push(child.val())); list.reverse();
-                const board = document.getElementById('rank-board'); board.innerHTML = "";
-                list.forEach((p, i) => {
+            db.ref('players').once('value', snap => {
+                const players = [];
+                snap.forEach(child => {
+                    const p = child.val();
+                    if(p.name) players.push({ name: p.name, score: p.score || 0 });
+                });
+                players.sort((a, b) => b.score - a.score);
+                const top10 = players.slice(0, 10);
+
+                const board = document.getElementById('rank-board'); 
+                board.innerHTML = "";
+                top10.forEach((p, i) => {
                     let style = i===0 ? 'color:#D4AF37; font-weight:bold;' : '';
-                    board.innerHTML += `<div class="rank-row" style="${style}"><span>${i+1}위 ${p.name}</span><span>${p.score||0}점</span></div>`;
+                    board.innerHTML += `<div class="rank-row" style="${style}"><span>${i+1}위 ${p.name}</span><span>${p.score}점</span></div>`;
                 });
             });
 
