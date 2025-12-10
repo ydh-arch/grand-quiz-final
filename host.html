@@ -110,7 +110,6 @@
                 <img id="q-image" src="" style="max-width:100%; max-height:300px; display:none; margin-bottom:15px; border-radius:10px;">
                 <span id="q-text" style="white-space: pre-wrap;">문제 로딩중...</span>
                 
-                <!-- 힌트가 누적되어 표시될 영역 (설명 퀴즈용) -->
                 <div id="hint-display" class="hint-text-area"></div>
 
                 <div class="time-badge" id="time-left">0</div>
@@ -232,23 +231,17 @@
             }
         }
 
-        // ★ [수정됨] 설명 퀴즈 힌트: 누적 표시
         function showHint(text, btn) {
             const display = document.getElementById('hint-display');
             display.style.display = 'block';
-            
-            // 구분선 추가 (첫 번째 힌트가 아닐 경우)
             const prefix = display.innerHTML ? '<div style="margin:8px 0; border-bottom:1px dashed #E67E22; opacity:0.3;"></div>' : '';
             display.innerHTML += prefix + `<div class="hint-item">💡 ${text}</div>`;
-            
-            // 버튼 비활성화 (한 번 누르면 끝)
             if(btn) {
                 btn.disabled = true;
                 btn.innerText += " (확인)";
             }
         }
 
-        // ★ 이미지 확대 퀴즈 힌트: 교체 (기존 유지)
         function changeImage(url) {
             const imgEl = document.getElementById('q-image');
             imgEl.src = url;
@@ -272,7 +265,6 @@
             imgEl.style.display = (q.image && q.image.startsWith('http')) ? 'block' : 'none';
             if(q.image) imgEl.src = q.image;
 
-            // ★ 힌트창 내용 초기화
             document.getElementById('hint-display').style.display = 'none';
             document.getElementById('hint-display').innerHTML = '';
 
@@ -296,10 +288,8 @@
                     if (opt && String(opt).trim() !== "") {
                         const safeOpt = String(opt).replace(/"/g, '&quot;').replace(/'/g, "\\'");
                         if(isImageQuiz) {
-                            // 이미지 퀴즈는 교체
                             container.innerHTML += `<button class="opt-hint" onclick="changeImage('${safeOpt}')">🖼️ 힌트 ${idx+1}</button>`;
                         } else {
-                            // 설명 퀴즈는 누적 (showHint 호출 시 this 전달)
                             container.innerHTML += `<button class="opt-hint" onclick="showHint('${safeOpt}', this)">💡 힌트 ${idx+1}</button>`;
                         }
                     }
@@ -325,14 +315,10 @@
             clearInterval(timerInterval);
             let left = sec;
             const timerBar = document.getElementById('timer-bar');
-            
             timerBar.style.transition = 'none';
             timerBar.style.width = '100%';
-            
             void timerBar.offsetWidth; 
-            
             document.getElementById('time-left').innerText = left;
-
             timerBar.style.transition = `width ${sec}s linear`;
             timerBar.style.width = '0%';
             
@@ -442,7 +428,6 @@
                 players.sort((a, b) => b.score - a.score);
                 
                 const top5 = players.slice(0, 5);
-                
                 const rankList = document.getElementById('live-rank-list'); 
                 rankList.innerHTML = "";
                 
@@ -516,43 +501,48 @@
             `;
         }
 
+        // ★ 팝업 제거됨 (즉시 실행)
         function startNextRound() {
-            if(confirm("점수를 초기화하고 다음 라운드를 시작합니다.")) {
-                db.ref('players').once('value', snap => {
-                    if(snap.exists()) {
-                        const updates = {};
-                        snap.forEach(c => updates[`players/${c.key}/score`] = 0);
-                        db.ref().update(updates).then(() => {
-                            showScreen('game-screen');
-                            nextQuestion();
-                        });
-                    } else {
+            db.ref('players').once('value', snap => {
+                if(snap.exists()) {
+                    const updates = {};
+                    snap.forEach(c => updates[`players/${c.key}/score`] = 0);
+                    db.ref().update(updates).then(() => {
                         showScreen('game-screen');
                         nextQuestion();
-                    }
-                    db.ref('answers').remove();
-                });
-            }
+                    });
+                } else {
+                    showScreen('game-screen');
+                    nextQuestion();
+                }
+                db.ref('answers').remove();
+            });
         }
 
         function backToMenu() { showScreen('menu-screen'); db.ref('gameStatus').set({ state: 'lobby' }); }
         
         function resetScoresKeepPlayers() {
-            if(confirm("참가자는 유지하고 점수만 0점으로?")) {
-                db.ref('players').once('value', s => {
-                    if(s.exists()) { const u={}; s.forEach(c=>u[`players/${c.key}/score`]=0); db.ref().update(u); }
-                    db.ref('answers').remove(); alert("완료");
-                });
-            }
+            db.ref('players').once('value', s => {
+                if(s.exists()) { const u={}; s.forEach(c=>u[`players/${c.key}/score`]=0); db.ref().update(u); }
+                db.ref('answers').remove();
+            });
         }
-        function resetAllData() { if(confirm("전체 삭제?")) { db.ref('players').remove(); db.ref('answers').remove(); alert("완료"); } }
+        function resetAllData() { 
+            db.ref('players').remove(); 
+            db.ref('answers').remove(); 
+        }
         
         function resetAllAndMenu() {
-            if(confirm("모든 데이터를 삭제하고 메인 메뉴로 돌아갑니다.")) {
-                db.ref('players').remove();
+            db.ref('players').remove();
+            db.ref('answers').remove();
+            backToMenu();
+        }
+        function resetScoreAndMenu() {
+            db.ref('players').once('value', s => {
+                if(s.exists()) { const u={}; s.forEach(c=>u[`players/${c.key}/score`]=0); db.ref().update(u); }
                 db.ref('answers').remove();
                 backToMenu();
-            }
+            });
         }
     </script>
 </body>
