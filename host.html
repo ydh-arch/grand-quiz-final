@@ -352,7 +352,7 @@
                 if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
             } else document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
 
-            // ★ 채점 및 점수 업데이트
+            // ★ 핵심: 점수 계산 및 랭킹 표시 로직 (안전하게 수정됨)
             db.ref('answers').once('value', ansSnap => {
                 const answers = ansSnap.val() || {}; 
                 db.ref('players').once('value', pSnap => {
@@ -366,7 +366,8 @@
                     
                     Object.keys(players).forEach(pid => {
                         const pData = players[pid];
-                        let currentScore = pData.score || 0;
+                        // ★ 중요: 무조건 숫자로 변환 (10진수)
+                        let currentScore = parseInt(pData.score || 0, 10);
                         let isCorrect = false;
                         let earned = 0;
 
@@ -375,6 +376,7 @@
                             const pAns = (ans.answer !== undefined && ans.answer !== null) ? String(ans.answer) : "";
                             const qAns = String(q.ans);
                             
+                            // 공백 제거 후 대소문자 무시하고 비교
                             if (pAns.replace(/\s/g, "").toLowerCase() === qAns.replace(/\s/g, "").toLowerCase()) {
                                 isCorrect = true;
                             }
@@ -401,19 +403,19 @@
             });
         }
 
-        // ★ 순위표 표시 (클라이언트 정렬 방식 - 누락 방지) ★
+        // ★ 순위표 표시 (클라이언트 사이드 정렬로 완벽 해결)
         function displayRankBox() {
             db.ref('players').once('value', snap => {
                 const players = [];
                 snap.forEach(child => {
                     const p = child.val();
-                    if(p.name) players.push({ name: p.name, score: p.score || 0 });
+                    // 이름이 있는 참가자만, 점수는 숫자로 변환하여 저장
+                    if(p.name) players.push({ name: p.name, score: parseInt(p.score || 0, 10) });
                 });
 
-                // 점수 내림차순 정렬
+                // 내림차순 정렬 (높은 점수가 위로)
                 players.sort((a, b) => b.score - a.score);
                 
-                // Top 5 자르기
                 const top5 = players.slice(0, 5);
                 
                 const rankList = document.getElementById('live-rank-list'); 
@@ -435,12 +437,12 @@
             showScreen('result-screen');
             document.getElementById('result-title').innerText = `${roundName} 종료!`;
             
-            // 라운드 결과에서도 안전한 정렬 사용
+            // 라운드 결과도 안전하게 정렬
             db.ref('players').once('value', snap => {
                 const players = [];
                 snap.forEach(child => {
                     const p = child.val();
-                    if(p.name) players.push({ name: p.name, score: p.score || 0 });
+                    if(p.name) players.push({ name: p.name, score: parseInt(p.score || 0, 10) });
                 });
                 players.sort((a, b) => b.score - a.score);
                 const top10 = players.slice(0, 10);
@@ -469,7 +471,7 @@
                 const players = [];
                 snap.forEach(child => {
                     const p = child.val();
-                    if(p.name) players.push({ name: p.name, score: p.score || 0 });
+                    if(p.name) players.push({ name: p.name, score: parseInt(p.score || 0, 10) });
                 });
                 players.sort((a, b) => b.score - a.score);
                 const top10 = players.slice(0, 10);
