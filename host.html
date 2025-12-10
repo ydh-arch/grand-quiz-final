@@ -41,8 +41,10 @@
 
         .opt-hint { background: var(--gb-purple); border: 3px solid var(--gb-gold); color: white; font-size: 1.5rem; border-radius: 15px; cursor: pointer; transition: 0.2s; font-weight: bold; padding: 20px; }
         .opt-hint:hover { background: #4a2d4a; transform: scale(1.05); }
+        .opt-hint:disabled { opacity: 0.6; cursor: default; background: #555; border-color: #777; transform: none; }
         
-        .hint-text-area { margin-top: 20px; font-size: 1.8rem; color: #E67E22; font-weight: bold; background: #fff3e0; padding: 15px; border-radius: 10px; width: 90%; display: none; animation: fadeIn 0.5s; border: 2px dashed #E67E22; }
+        .hint-text-area { margin-top: 20px; font-size: 1.8rem; color: #E67E22; font-weight: bold; background: #fff3e0; padding: 15px; border-radius: 10px; width: 90%; display: none; animation: fadeIn 0.5s; border: 2px dashed #E67E22; text-align: left; }
+        .hint-item { padding: 5px 0; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         .game-btn { padding: 15px 40px; background: var(--gb-purple); color: white; border: none; font-size: 1.2rem; cursor: pointer; margin-top: 20px; border-radius: 50px; transition: 0.2s; }
@@ -108,6 +110,7 @@
                 <img id="q-image" src="" style="max-width:100%; max-height:300px; display:none; margin-bottom:15px; border-radius:10px;">
                 <span id="q-text" style="white-space: pre-wrap;">문제 로딩중...</span>
                 
+                <!-- 힌트가 누적되어 표시될 영역 (설명 퀴즈용) -->
                 <div id="hint-display" class="hint-text-area"></div>
 
                 <div class="time-badge" id="time-left">0</div>
@@ -229,12 +232,23 @@
             }
         }
 
-        function showHint(text) {
+        // ★ [수정됨] 설명 퀴즈 힌트: 누적 표시
+        function showHint(text, btn) {
             const display = document.getElementById('hint-display');
-            display.innerText = text;
             display.style.display = 'block';
+            
+            // 구분선 추가 (첫 번째 힌트가 아닐 경우)
+            const prefix = display.innerHTML ? '<div style="margin:8px 0; border-bottom:1px dashed #E67E22; opacity:0.3;"></div>' : '';
+            display.innerHTML += prefix + `<div class="hint-item">💡 ${text}</div>`;
+            
+            // 버튼 비활성화 (한 번 누르면 끝)
+            if(btn) {
+                btn.disabled = true;
+                btn.innerText += " (확인)";
+            }
         }
 
+        // ★ 이미지 확대 퀴즈 힌트: 교체 (기존 유지)
         function changeImage(url) {
             const imgEl = document.getElementById('q-image');
             imgEl.src = url;
@@ -258,7 +272,10 @@
             imgEl.style.display = (q.image && q.image.startsWith('http')) ? 'block' : 'none';
             if(q.image) imgEl.src = q.image;
 
+            // ★ 힌트창 내용 초기화
             document.getElementById('hint-display').style.display = 'none';
+            document.getElementById('hint-display').innerHTML = '';
+
             document.getElementById('ans-count').innerText = "0";
             document.getElementById('live-rank-box').style.display = 'none';
             document.getElementById('opt-container').style.display = 'grid';
@@ -279,9 +296,11 @@
                     if (opt && String(opt).trim() !== "") {
                         const safeOpt = String(opt).replace(/"/g, '&quot;').replace(/'/g, "\\'");
                         if(isImageQuiz) {
+                            // 이미지 퀴즈는 교체
                             container.innerHTML += `<button class="opt-hint" onclick="changeImage('${safeOpt}')">🖼️ 힌트 ${idx+1}</button>`;
                         } else {
-                            container.innerHTML += `<button class="opt-hint" onclick="showHint('${safeOpt}')">💡 힌트 ${idx+1}</button>`;
+                            // 설명 퀴즈는 누적 (showHint 호출 시 this 전달)
+                            container.innerHTML += `<button class="opt-hint" onclick="showHint('${safeOpt}', this)">💡 힌트 ${idx+1}</button>`;
                         }
                     }
                 });
@@ -305,13 +324,25 @@
         function startTimer(sec) {
             clearInterval(timerInterval);
             let left = sec;
+            const timerBar = document.getElementById('timer-bar');
+            
+            timerBar.style.transition = 'none';
+            timerBar.style.width = '100%';
+            
+            void timerBar.offsetWidth; 
+            
             document.getElementById('time-left').innerText = left;
-            document.getElementById('timer-bar').style.width = '100%';
-            document.getElementById('timer-bar').style.transition = `width ${sec}s linear`;
-            setTimeout(() => document.getElementById('timer-bar').style.width = '0%', 50);
+
+            timerBar.style.transition = `width ${sec}s linear`;
+            timerBar.style.width = '0%';
+            
             timerInterval = setInterval(() => {
-                left--; document.getElementById('time-left').innerText = left;
-                if(left <= 0) { clearInterval(timerInterval); checkAnswerAndShowRank(); }
+                left--; 
+                document.getElementById('time-left').innerText = left;
+                if(left <= 0) { 
+                    clearInterval(timerInterval); 
+                    checkAnswerAndShowRank(); 
+                }
             }, 1000);
         }
 
@@ -352,7 +383,6 @@
                 if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
             } else document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
 
-            // ★ 핵심: 점수 계산 및 랭킹 표시 로직 (안전하게 수정됨)
             db.ref('answers').once('value', ansSnap => {
                 const answers = ansSnap.val() || {}; 
                 db.ref('players').once('value', pSnap => {
@@ -366,7 +396,6 @@
                     
                     Object.keys(players).forEach(pid => {
                         const pData = players[pid];
-                        // ★ 중요: 무조건 숫자로 변환 (10진수)
                         let currentScore = parseInt(pData.score || 0, 10);
                         let isCorrect = false;
                         let earned = 0;
@@ -376,7 +405,6 @@
                             const pAns = (ans.answer !== undefined && ans.answer !== null) ? String(ans.answer) : "";
                             const qAns = String(q.ans);
                             
-                            // 공백 제거 후 대소문자 무시하고 비교
                             if (pAns.replace(/\s/g, "").toLowerCase() === qAns.replace(/\s/g, "").toLowerCase()) {
                                 isCorrect = true;
                             }
@@ -403,17 +431,14 @@
             });
         }
 
-        // ★ 순위표 표시 (클라이언트 사이드 정렬로 완벽 해결)
         function displayRankBox() {
             db.ref('players').once('value', snap => {
                 const players = [];
                 snap.forEach(child => {
                     const p = child.val();
-                    // 이름이 있는 참가자만, 점수는 숫자로 변환하여 저장
                     if(p.name) players.push({ name: p.name, score: parseInt(p.score || 0, 10) });
                 });
 
-                // 내림차순 정렬 (높은 점수가 위로)
                 players.sort((a, b) => b.score - a.score);
                 
                 const top5 = players.slice(0, 5);
@@ -437,7 +462,6 @@
             showScreen('result-screen');
             document.getElementById('result-title').innerText = `${roundName} 종료!`;
             
-            // 라운드 결과도 안전하게 정렬
             db.ref('players').once('value', snap => {
                 const players = [];
                 snap.forEach(child => {
