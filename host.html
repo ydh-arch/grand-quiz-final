@@ -364,25 +364,16 @@
                 document.getElementById('q-image').style.display = 'block';
             }
 
-            // ★ OX 및 일반 문제 정답 표시 수정 (안전하게)
+            // ★ OX 정답 표시 수정 (숫자 매핑)
             let visualReveal = false;
             
-            // OX 문제일 경우 O/X 문자 매핑하여 ID 찾기
             if(q.type === 'ox') {
-                let ansIdx = -1;
-                if(String(q.ans).toUpperCase() === 'O') ansIdx = 0;
-                else if(String(q.ans).toUpperCase() === 'X') ansIdx = 1;
-                
-                if(ansIdx !== -1) {
-                    const ansId = `opt-${ansIdx}`;
-                    if(document.getElementById(ansId)) {
-                        document.getElementById(ansId).classList.add('reveal');
-                        visualReveal = true;
-                    }
+                const ansId = `opt-${q.ans}`; // q.ans가 0 또는 1
+                if(document.getElementById(ansId)) {
+                    document.getElementById(ansId).classList.add('reveal');
+                    visualReveal = true;
                 }
-            } 
-            // 객관식(choice) 문제일 경우
-            else if(q.type === 'choice' && document.getElementsByClassName('opt-hint').length === 0) {
+            } else if(q.type === 'choice' && document.getElementsByClassName('opt-hint').length === 0) {
                 const ansId = `opt-${q.ans}`;
                 if(document.getElementById(ansId)) {
                     document.getElementById(ansId).classList.add('reveal');
@@ -390,9 +381,13 @@
                 }
             }
 
-            // 시각적 표시가 없으면(주관식 등) 텍스트로 정답 공개
             if (!visualReveal) {
-                document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
+                let displayAns = q.ans;
+                if(q.type === 'ox') {
+                    if(String(q.ans) === '0') displayAns = 'O';
+                    else if(String(q.ans) === '1') displayAns = 'X';
+                }
+                document.getElementById('q-text').innerText += `\n\n✅ 정답: ${displayAns}`;
             }
 
             db.ref('answers').once('value', ansSnap => {
@@ -415,7 +410,13 @@
                         if(answers[pid]) {
                             const ans = answers[pid];
                             const pAns = (ans.answer !== undefined && ans.answer !== null) ? String(ans.answer) : "";
-                            const qAns = String(q.ans);
+                            let qAns = String(q.ans);
+                            
+                            // ★ OX 퀴즈 채점 변환 (0->O, 1->X)
+                            if(q.type === 'ox') {
+                                if(qAns === '0') qAns = 'O';
+                                else if(qAns === '1') qAns = 'X';
+                            }
                             
                             if (pAns.replace(/\s/g, "").toLowerCase() === qAns.replace(/\s/g, "").toLowerCase()) {
                                 isCorrect = true;
