@@ -255,6 +255,10 @@
             const btn = document.getElementById('action-btn'); btn.innerText = "정답 & 순위 확인"; btn.className = "game-btn";
             
             const q = currentQuizList[currentQIndex];
+            
+            // ★ 모든 비교를 소문자로 통일
+            const qType = String(q.type).trim().toLowerCase();
+            
             currentTimeLimit = q.time ? parseInt(q.time) : 20;
             const point = q.point ? parseInt(q.point) : 1000;
             document.getElementById('round-display').innerText = `${q.category} - ${q.round || (currentQIndex+1)}`;
@@ -274,9 +278,10 @@
             
             const container = document.getElementById('opt-container'); container.innerHTML = '';
             
-            let clientType = q.type;
-            if(q.type === '순서' || q.type === 'order') clientType = 'seq';
-            if(q.type === '주관식') clientType = 'input';
+            // 클라이언트에게 보낼 타입 결정
+            let clientType = qType;
+            if(qType === '순서' || qType === 'order') clientType = 'seq';
+            if(qType === '주관식') clientType = 'input';
 
             const cat = (q.category||'').toLowerCase();
             const isImageQuiz = ['이미지', 'image', 'zoom', '확대'].some(k => cat.includes(k));
@@ -295,9 +300,9 @@
                     }
                 });
                 clientType = 'input'; 
-            } else if(q.type === 'choice') {
+            } else if(qType === 'choice') {
                 q.options.forEach((o,i) => container.innerHTML += `<div class="opt opt-${i+1}" id="opt-${i}">${['▲','■','●','◆'][i]} ${o}</div>`);
-            } else if(q.type === 'ox') {
+            } else if(qType === 'ox') {
                 container.innerHTML = `<div class="opt opt-1" id="opt-0" style="background:#E74C3C">O</div><div class="opt opt-2" id="opt-1" style="background:#3498DB">X</div>`;
             } else {
                 container.style.display = 'none';
@@ -352,6 +357,8 @@
             document.getElementById('time-left').innerText = "STOP";
             
             const q = currentQuizList[currentQIndex];
+            const qType = String(q.type).trim().toLowerCase(); // ★ 여기서도 소문자 변환
+            
             db.ref('gameStatus').set({ state: 'result', answer: q.ans });
 
             const maxPoint = q.point ? parseInt(q.point) : 1000;
@@ -364,16 +371,24 @@
                 document.getElementById('q-image').style.display = 'block';
             }
 
-            // ★ OX 정답 표시 수정 (숫자 매핑)
+            // ★ OX 정답 표시 로직 개선 (qType 사용)
             let visualReveal = false;
             
-            if(q.type === 'ox') {
-                const ansId = `opt-${q.ans}`; // q.ans가 0 또는 1
-                if(document.getElementById(ansId)) {
-                    document.getElementById(ansId).classList.add('reveal');
-                    visualReveal = true;
+            if(qType === 'ox') {
+                let ansIdx = -1;
+                // 정답 데이터도 정규화 (0/O -> 0, 1/X -> 1)
+                const sAns = String(q.ans).toUpperCase().trim();
+                if(sAns === '0' || sAns === 'O') ansIdx = 0;
+                else if(sAns === '1' || sAns === 'X') ansIdx = 1;
+                
+                if(ansIdx !== -1) {
+                    const ansId = `opt-${ansIdx}`;
+                    if(document.getElementById(ansId)) {
+                        document.getElementById(ansId).classList.add('reveal');
+                        visualReveal = true;
+                    }
                 }
-            } else if(q.type === 'choice' && document.getElementsByClassName('opt-hint').length === 0) {
+            } else if(qType === 'choice' && document.getElementsByClassName('opt-hint').length === 0) {
                 const ansId = `opt-${q.ans}`;
                 if(document.getElementById(ansId)) {
                     document.getElementById(ansId).classList.add('reveal');
@@ -383,9 +398,10 @@
 
             if (!visualReveal) {
                 let displayAns = q.ans;
-                if(q.type === 'ox') {
-                    if(String(q.ans) === '0') displayAns = 'O';
-                    else if(String(q.ans) === '1') displayAns = 'X';
+                if(qType === 'ox') {
+                    const sAns = String(q.ans).toUpperCase().trim();
+                    if(sAns === '0' || sAns === 'O') displayAns = 'O';
+                    else if(sAns === '1' || sAns === 'X') displayAns = 'X';
                 }
                 document.getElementById('q-text').innerText += `\n\n✅ 정답: ${displayAns}`;
             }
@@ -410,16 +426,25 @@
                         if(answers[pid]) {
                             const ans = answers[pid];
                             const pAns = (ans.answer !== undefined && ans.answer !== null) ? String(ans.answer) : "";
-                            let qAns = String(q.ans);
+                            const qAns = String(q.ans);
                             
-                            // ★ OX 퀴즈 채점 변환 (0->O, 1->X)
-                            if(q.type === 'ox') {
-                                if(qAns === '0') qAns = 'O';
-                                else if(qAns === '1') qAns = 'X';
-                            }
-                            
-                            if (pAns.replace(/\s/g, "").toLowerCase() === qAns.replace(/\s/g, "").toLowerCase()) {
-                                isCorrect = true;
+                            // ★ OX 퀴즈 채점 로직 (무적 비교)
+                            if (qType === 'ox') {
+                                const mapOX = (val) => {
+                                    const s = String(val).toUpperCase().trim();
+                                    if (s === '0' || s === 'O' || s === '⭕') return 'O';
+                                    if (s === '1' || s === 'X' || s === '❌') return 'X';
+                                    return s;
+                                };
+                                
+                                if (mapOX(pAns) === mapOX(qAns)) {
+                                    isCorrect = true;
+                                }
+                            } else {
+                                // 일반 비교
+                                if (pAns.replace(/\s/g, "").toLowerCase() === qAns.replace(/\s/g, "").toLowerCase()) {
+                                    isCorrect = true;
+                                }
                             }
                             
                             if(isCorrect) {
