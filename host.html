@@ -364,10 +364,36 @@
                 document.getElementById('q-image').style.display = 'block';
             }
 
-            if(q.type !== 'input' && q.type !== 'order' && q.type !== '순서' && q.type !== 'seq' && document.getElementsByClassName('opt-hint').length === 0) {
+            // ★ OX 및 일반 문제 정답 표시 수정 (안전하게)
+            let visualReveal = false;
+            
+            // OX 문제일 경우 O/X 문자 매핑하여 ID 찾기
+            if(q.type === 'ox') {
+                let ansIdx = -1;
+                if(String(q.ans).toUpperCase() === 'O') ansIdx = 0;
+                else if(String(q.ans).toUpperCase() === 'X') ansIdx = 1;
+                
+                if(ansIdx !== -1) {
+                    const ansId = `opt-${ansIdx}`;
+                    if(document.getElementById(ansId)) {
+                        document.getElementById(ansId).classList.add('reveal');
+                        visualReveal = true;
+                    }
+                }
+            } 
+            // 객관식(choice) 문제일 경우
+            else if(q.type === 'choice' && document.getElementsByClassName('opt-hint').length === 0) {
                 const ansId = `opt-${q.ans}`;
-                if(document.getElementById(ansId)) document.getElementById(ansId).classList.add('reveal');
-            } else document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
+                if(document.getElementById(ansId)) {
+                    document.getElementById(ansId).classList.add('reveal');
+                    visualReveal = true;
+                }
+            }
+
+            // 시각적 표시가 없으면(주관식 등) 텍스트로 정답 공개
+            if (!visualReveal) {
+                document.getElementById('q-text').innerText += `\n\n✅ 정답: ${q.ans}`;
+            }
 
             db.ref('answers').once('value', ansSnap => {
                 const answers = ansSnap.val() || {}; 
@@ -454,7 +480,6 @@
                     if(p.name) players.push({ name: p.name, score: parseInt(p.score || 0, 10) });
                 });
                 players.sort((a, b) => b.score - a.score);
-                // ★ 수정됨: 10위 -> 5위로 변경
                 const top5 = players.slice(0, 5);
 
                 const board = document.getElementById('rank-board'); 
@@ -484,7 +509,6 @@
                     if(p.name) players.push({ name: p.name, score: parseInt(p.score || 0, 10) });
                 });
                 players.sort((a, b) => b.score - a.score);
-                // ★ 수정됨: 10위 -> 5위로 변경
                 const top5 = players.slice(0, 5);
 
                 const board = document.getElementById('rank-board'); 
