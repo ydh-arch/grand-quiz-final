@@ -454,11 +454,12 @@
                     if(p.name) players.push({ name: p.name, score: parseInt(p.score || 0, 10) });
                 });
                 players.sort((a, b) => b.score - a.score);
-                const top10 = players.slice(0, 10);
+                // ★ 수정됨: 10위 -> 5위로 변경
+                const top5 = players.slice(0, 5);
 
                 const board = document.getElementById('rank-board'); 
                 board.innerHTML = "";
-                top10.forEach((p, i) => {
+                top5.forEach((p, i) => {
                     let style = i===0 ? 'color:#D4AF37; font-weight:bold;' : '';
                     board.innerHTML += `<div class="rank-row" style="${style}"><span>${i+1}위 ${p.name}</span><span>${p.score}점</span></div>`;
                 });
@@ -483,11 +484,12 @@
                     if(p.name) players.push({ name: p.name, score: parseInt(p.score || 0, 10) });
                 });
                 players.sort((a, b) => b.score - a.score);
-                const top10 = players.slice(0, 10);
+                // ★ 수정됨: 10위 -> 5위로 변경
+                const top5 = players.slice(0, 5);
 
                 const board = document.getElementById('rank-board'); 
                 board.innerHTML = "";
-                top10.forEach((p, i) => {
+                top5.forEach((p, i) => {
                     let style = i===0 ? 'color:#D4AF37; font-weight:bold;' : '';
                     board.innerHTML += `<div class="rank-row" style="${style}"><span>${i+1}위 ${p.name}</span><span>${p.score}점</span></div>`;
                 });
@@ -501,7 +503,6 @@
             `;
         }
 
-        // ★ 팝업 제거됨 (즉시 실행)
         function startNextRound() {
             db.ref('players').once('value', snap => {
                 if(snap.exists()) {
